@@ -53,6 +53,8 @@ fun TopSymbolBar(
     showRsi: Boolean,
     rsiValue: Double?,
     onToggleRsi: () -> Unit,
+    showVolume: Boolean = true,
+    onToggleVolume: () -> Unit = {},
     showTape: Boolean = true,
     onToggleTape: () -> Unit = {},
     modifier: Modifier = Modifier
@@ -215,6 +217,27 @@ fun TopSymbolBar(
 
             // Indicator Toggles & Tape Toggle
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                // VOL Toggle
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(if (showVolume) PiaAccent.copy(alpha = 0.2f) else PiaBorder.copy(alpha = 0.4f))
+                        .border(
+                            0.5.dp,
+                            if (showVolume) PiaAccent else PiaBorder,
+                            RoundedCornerShape(4.dp)
+                        )
+                        .clickable { onToggleVolume() }
+                        .padding(horizontal = 6.dp, vertical = 3.dp)
+                ) {
+                    Text(
+                        text = "VOL",
+                        color = if (showVolume) PiaAccent else PiaTextMuted,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+
                 // Live Tape Toggle
                 Box(
                     modifier = Modifier

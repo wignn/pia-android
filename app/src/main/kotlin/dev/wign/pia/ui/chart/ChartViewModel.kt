@@ -58,6 +58,9 @@ class ChartViewModel(
     private val _showRsi14 = MutableStateFlow(false)
     val showRsi14: StateFlow<Boolean> = _showRsi14.asStateFlow()
 
+    private val _showVolume = MutableStateFlow(true)
+    val showVolume: StateFlow<Boolean> = _showVolume.asStateFlow()
+
     private val _showTape = MutableStateFlow(true)
     val showTape: StateFlow<Boolean> = _showTape.asStateFlow()
 
@@ -78,6 +81,7 @@ class ChartViewModel(
             val savedType = prefs.chartType.first()
             val savedEma = prefs.showEma.first()
             val savedRsi = prefs.showRsi.first()
+            val savedVol = prefs.showVolume.first()
             val savedTape = prefs.showTape.first()
 
             _currentSymbol.value = savedSymbol
@@ -85,6 +89,7 @@ class ChartViewModel(
             _chartType.value = savedType
             _showEma20.value = savedEma
             _showRsi14.value = savedRsi
+            _showVolume.value = savedVol
             _showTape.value = savedTape
 
             loadSymbolData(savedSymbol, savedTf)
@@ -177,6 +182,12 @@ class ChartViewModel(
         val next = !_showRsi14.value
         _showRsi14.value = next
         viewModelScope.launch { prefs.saveShowRsi(next) }
+    }
+
+    fun toggleVolume() {
+        val next = !_showVolume.value
+        _showVolume.value = next
+        viewModelScope.launch { prefs.saveShowVolume(next) }
     }
 
     fun toggleTape() {

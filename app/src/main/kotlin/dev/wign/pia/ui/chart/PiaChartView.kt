@@ -23,8 +23,10 @@ import com.tradingview.lightweightcharts.api.options.models.CrosshairLineOptions
 import com.tradingview.lightweightcharts.api.options.models.CrosshairOptions
 import com.tradingview.lightweightcharts.api.options.models.GridLineOptions
 import com.tradingview.lightweightcharts.api.options.models.GridOptions
+import com.tradingview.lightweightcharts.api.options.models.HistogramSeriesOptions
 import com.tradingview.lightweightcharts.api.options.models.LayoutOptions
 import com.tradingview.lightweightcharts.api.options.models.LineSeriesOptions
+import com.tradingview.lightweightcharts.api.options.models.PriceScaleMargins
 import com.tradingview.lightweightcharts.api.options.models.PriceScaleOptions
 import com.tradingview.lightweightcharts.api.options.models.TimeScaleOptions
 import com.tradingview.lightweightcharts.api.series.enums.CrosshairMode
@@ -33,7 +35,9 @@ import com.tradingview.lightweightcharts.api.series.enums.LineWidth
 import com.tradingview.lightweightcharts.api.series.models.AreaData
 import com.tradingview.lightweightcharts.api.series.models.BarData
 import com.tradingview.lightweightcharts.api.series.models.CandlestickData
+import com.tradingview.lightweightcharts.api.series.models.HistogramData
 import com.tradingview.lightweightcharts.api.series.models.LineData
+import com.tradingview.lightweightcharts.api.series.models.PriceScaleId
 import com.tradingview.lightweightcharts.api.series.models.Time
 import com.tradingview.lightweightcharts.view.ChartsView
 import dev.wign.pia.data.Candle
@@ -46,12 +50,14 @@ fun PiaChartView(
     emaSeries: List<Pair<Long, Double>>,
     latestEma: Double?,
     showEma: Boolean,
+    showVolume: Boolean = true,
     chartType: String = "candles",
     onCrosshairMoved: (Long?) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     var mainSeriesApi by remember { mutableStateOf<SeriesApi?>(null) }
+    var volumeSeriesApi by remember { mutableStateOf<SeriesApi?>(null) }
     var emaSeriesApi by remember { mutableStateOf<SeriesApi?>(null) }
 
     val chartsView = remember(chartType) {
@@ -90,6 +96,20 @@ fun PiaChartView(
                 )
             }
 
+            // Dedicated volume price scale pinned to bottom 20%
+            api.priceScale(PriceScaleId("volume")).applyOptions {
+                scaleMargins = PriceScaleMargins(top = 0.82f, bottom = 0.0f)
+            }
+
+            // Volume Histogram Series
+            api.addHistogramSeries(
+                options = HistogramSeriesOptions(
+                    priceScaleId = PriceScaleId("volume"),
+                    priceLineVisible = false
+                ),
+                onSeriesCreated = { series -> volumeSeriesApi = series }
+            )
+
             // Dynamic Main Series according to chartType
             when (chartType) {
                 "line" -> {
@@ -122,7 +142,6 @@ fun PiaChartView(
                     )
                 }
                 else -> {
-                    // Default Candlestick
                     api.addCandlestickSeries(
                         options = CandlestickSeriesOptions(
                             upColor = IntColor(0xFF26A69A.toInt()),
@@ -158,50 +177,72 @@ fun PiaChartView(
         }
     }
 
-    // Set initial / historical main dataset
-    LaunchedEffect(historicalCandles, mainSeriesApi, chartType) {
+    // Set initial / historical main dataset & volume
+    LaunchedEffect(historicalCandles, mainSeriesApi, volumeSeriesApi, chartType, showVolume) {
         val api = mainSeriesApi
-        if (historicalCandles.isNotEmpty() && api != null) {
+        val volApi = volumeSeriesApi
+        if (historicalCandles.isNotEmpty()) {
             val distinctList = historicalCandles
                 .distinctBy { it.time }
                 .sortedBy { it.time }
 
-            when (chartType) {
-                "line" -> {
-                    val lineData = distinctList.map { c ->
-                        LineData(time = Time.Utc(c.time), value = c.close.toFloat())
+            // Update main series
+            if (api != null) {
+                when (chartType) {
+                    "line" -> {
+                        val lineData = distinctList.map { c ->
+                            LineData(time = Time.Utc(c.time), value = c.close.toFloat())
+                        }
+                        api.setData(lineData)
                     }
-                    api.setData(lineData)
-                }
-                "area" -> {
-                    val areaData = distinctList.map { c ->
-                        AreaData(time = Time.Utc(c.time), value = c.close.toFloat())
+                    "area" -> {
+                        val areaData = distinctList.map { c ->
+                            AreaData(time = Time.Utc(c.time), value = c.close.toFloat())
+                        }
+                        api.setData(areaData)
                     }
-                    api.setData(areaData)
+                    "bars" -> {
+                        val barData = distinctList.map { c ->
+                            BarData(
+                                time = Time.Utc(c.time),
+                                open = c.open.toFloat(),
+                                high = c.high.toFloat(),
+                                low = c.low.toFloat(),
+                                close = c.close.toFloat()
+                            )
+                        }
+                        api.setData(barData)
+                    }
+                    else -> {
+                        val candleData = distinctList.map { c ->
+                            CandlestickData(
+                                time = Time.Utc(c.time),
+                                open = c.open.toFloat(),
+                                high = c.high.toFloat(),
+                                low = c.low.toFloat(),
+                                close = c.close.toFloat()
+                            )
+                        }
+                        api.setData(candleData)
+                    }
                 }
-                "bars" -> {
-                    val barData = distinctList.map { c ->
-                        BarData(
+            }
+
+            // Update volume histogram series
+            if (volApi != null) {
+                if (showVolume) {
+                    val volData = distinctList.map { c ->
+                        val isUp = c.close >= c.open
+                        val colorInt = if (isUp) 0x6626A69A.toInt() else 0x66EF5350.toInt()
+                        HistogramData(
                             time = Time.Utc(c.time),
-                            open = c.open.toFloat(),
-                            high = c.high.toFloat(),
-                            low = c.low.toFloat(),
-                            close = c.close.toFloat()
+                            value = c.volume.toFloat(),
+                            color = IntColor(colorInt)
                         )
                     }
-                    api.setData(barData)
-                }
-                else -> {
-                    val candleData = distinctList.map { c ->
-                        CandlestickData(
-                            time = Time.Utc(c.time),
-                            open = c.open.toFloat(),
-                            high = c.high.toFloat(),
-                            low = c.low.toFloat(),
-                            close = c.close.toFloat()
-                        )
-                    }
-                    api.setData(candleData)
+                    volApi.setData(volData)
+                } else {
+                    volApi.setData(emptyList())
                 }
             }
         }
@@ -225,39 +266,54 @@ fun PiaChartView(
         }
     }
 
-    // Live tick / candle update
+    // Live tick / candle & volume update
     LaunchedEffect(latestCandle) {
         val api = mainSeriesApi
-        if (latestCandle != null && api != null) {
-            when (chartType) {
-                "line" -> {
-                    api.update(LineData(time = Time.Utc(latestCandle.time), value = latestCandle.close.toFloat()))
-                }
-                "area" -> {
-                    api.update(AreaData(time = Time.Utc(latestCandle.time), value = latestCandle.close.toFloat()))
-                }
-                "bars" -> {
-                    api.update(
-                        BarData(
-                            time = Time.Utc(latestCandle.time),
-                            open = latestCandle.open.toFloat(),
-                            high = latestCandle.high.toFloat(),
-                            low = latestCandle.low.toFloat(),
-                            close = latestCandle.close.toFloat()
+        val volApi = volumeSeriesApi
+        if (latestCandle != null) {
+            if (api != null) {
+                when (chartType) {
+                    "line" -> {
+                        api.update(LineData(time = Time.Utc(latestCandle.time), value = latestCandle.close.toFloat()))
+                    }
+                    "area" -> {
+                        api.update(AreaData(time = Time.Utc(latestCandle.time), value = latestCandle.close.toFloat()))
+                    }
+                    "bars" -> {
+                        api.update(
+                            BarData(
+                                time = Time.Utc(latestCandle.time),
+                                open = latestCandle.open.toFloat(),
+                                high = latestCandle.high.toFloat(),
+                                low = latestCandle.low.toFloat(),
+                                close = latestCandle.close.toFloat()
+                            )
                         )
-                    )
-                }
-                else -> {
-                    api.update(
-                        CandlestickData(
-                            time = Time.Utc(latestCandle.time),
-                            open = latestCandle.open.toFloat(),
-                            high = latestCandle.high.toFloat(),
-                            low = latestCandle.low.toFloat(),
-                            close = latestCandle.close.toFloat()
+                    }
+                    else -> {
+                        api.update(
+                            CandlestickData(
+                                time = Time.Utc(latestCandle.time),
+                                open = latestCandle.open.toFloat(),
+                                high = latestCandle.high.toFloat(),
+                                low = latestCandle.low.toFloat(),
+                                close = latestCandle.close.toFloat()
+                            )
                         )
-                    )
+                    }
                 }
+            }
+
+            if (showVolume && volApi != null) {
+                val isUp = latestCandle.close >= latestCandle.open
+                val colorInt = if (isUp) 0x6626A69A.toInt() else 0x66EF5350.toInt()
+                volApi.update(
+                    HistogramData(
+                        time = Time.Utc(latestCandle.time),
+                        value = latestCandle.volume.toFloat(),
+                        color = IntColor(colorInt)
+                    )
+                )
             }
 
             if (showEma && latestEma != null && emaSeriesApi != null) {

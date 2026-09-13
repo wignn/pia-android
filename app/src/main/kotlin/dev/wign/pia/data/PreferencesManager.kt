@@ -19,6 +19,7 @@ class PreferencesManager(private val context: Context) {
         val KEY_CHART_TYPE = stringPreferencesKey("chart_type")
         val KEY_SHOW_EMA = booleanPreferencesKey("show_ema")
         val KEY_SHOW_RSI = booleanPreferencesKey("show_rsi")
+        val KEY_SHOW_VOLUME = booleanPreferencesKey("show_volume")
         val KEY_SHOW_TAPE = booleanPreferencesKey("show_tape")
         val KEY_FAVORITES = stringSetPreferencesKey("favorite_symbols")
     }
@@ -41,6 +42,10 @@ class PreferencesManager(private val context: Context) {
 
     val showRsi: Flow<Boolean> = context.dataStore.data.map { prefs ->
         prefs[KEY_SHOW_RSI] ?: false
+    }
+
+    val showVolume: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_SHOW_VOLUME] ?: true
     }
 
     val showTape: Flow<Boolean> = context.dataStore.data.map { prefs ->
@@ -78,6 +83,12 @@ class PreferencesManager(private val context: Context) {
     suspend fun saveShowRsi(show: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[KEY_SHOW_RSI] = show
+        }
+    }
+
+    suspend fun saveShowVolume(show: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_SHOW_VOLUME] = show
         }
     }
 
