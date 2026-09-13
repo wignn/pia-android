@@ -54,26 +54,61 @@ data class WatchlistItem(
     val sampleChange: Double = 0.0
 )
 
-val DEFAULT_WATCHLIST = listOf(
-    // IDX
+val INSTITUTIONAL_WATCHLIST = listOf(
+    // === IDX STOCKS & INDICES ===
     WatchlistItem("IDX:BBCA", "Bank Central Asia", "IDX", 10250.0, 1.25),
     WatchlistItem("IDX:BBRI", "Bank Rakyat Indonesia", "IDX", 5150.0, -0.48),
     WatchlistItem("IDX:BMRI", "Bank Mandiri", "IDX", 7050.0, 0.71),
     WatchlistItem("IDX:BBNI", "Bank Negara Indonesia", "IDX", 5400.0, 0.0),
     WatchlistItem("IDX:TLKM", "Telkom Indonesia", "IDX", 3040.0, -1.30),
     WatchlistItem("IDX:ASII", "Astra International", "IDX", 5100.0, 0.99),
-    WatchlistItem("IDX:COMPOSITE", "IHSG Composite", "IDX", 7760.5, 0.35),
-    // Crypto
+    WatchlistItem("IDX:ADRO", "Adaro Energy Indonesia", "IDX", 3890.0, 2.10),
+    WatchlistItem("IDX:PTBA", "Bukit Asam", "IDX", 2710.0, 0.37),
+    WatchlistItem("IDX:ANTM", "Aneka Tambang (Antam)", "IDX", 1620.0, 1.89),
+    WatchlistItem("IDX:MDKA", "Merdeka Copper Gold", "IDX", 2380.0, -0.83),
+    WatchlistItem("IDX:INCO", "Vale Indonesia", "IDX", 3980.0, 0.51),
+    WatchlistItem("IDX:AMMN", "Amman Mineral Internasional", "IDX", 9450.0, 1.61),
+    WatchlistItem("IDX:ICBP", "Indofood CBP Sukses Makmur", "IDX", 11950.0, -0.42),
+    WatchlistItem("IDX:INDF", "Indofood Sukses Makmur", "IDX", 7100.0, 0.0),
+    WatchlistItem("IDX:UNVR", "Unilever Indonesia", "IDX", 2180.0, -2.24),
+    WatchlistItem("IDX:GOTO", "GoTo Gojek Tokopedia", "IDX", 58.0, 1.75),
+    WatchlistItem("IDX:COMPOSITE", "IHSG Composite Index", "IDX", 7760.5, 0.35),
+
+    // === CRYPTO MAJORS ===
     WatchlistItem("BINANCE:BTCUSDT", "Bitcoin / Tether", "Crypto", 94250.0, 2.45),
     WatchlistItem("BINANCE:ETHUSDT", "Ethereum / Tether", "Crypto", 3350.0, -0.85),
     WatchlistItem("BINANCE:SOLUSDT", "Solana / Tether", "Crypto", 215.4, 4.12),
     WatchlistItem("BINANCE:BNBUSDT", "BNB / Tether", "Crypto", 680.2, 1.10),
-    // Global & Commodities
-    WatchlistItem("CAPITALCOM:GOLD", "Gold Spot (USD)", "Commodities", 2685.2, 0.42),
-    WatchlistItem("CAPITALCOM:SILVER", "Silver Spot (USD)", "Commodities", 31.85, -0.65),
-    WatchlistItem("CAPITALCOM:OIL_CRUDE", "Crude Oil (WTI)", "Commodities", 69.40, -1.15),
+    WatchlistItem("BINANCE:XRPUSDT", "Ripple / Tether", "Crypto", 1.45, 8.20),
+    WatchlistItem("BINANCE:DOGEUSDT", "Dogecoin / Tether", "Crypto", 0.38, 5.15),
+    WatchlistItem("BINANCE:ADAUSDT", "Cardano / Tether", "Crypto", 0.88, 1.95),
+    WatchlistItem("BINANCE:AVAXUSDT", "Avalanche / Tether", "Crypto", 34.5, -0.29),
+    WatchlistItem("BINANCE:SUIUSDT", "Sui Network / Tether", "Crypto", 3.42, 6.75),
+    WatchlistItem("BINANCE:NEARUSDT", "Near Protocol / Tether", "Crypto", 6.80, 2.80),
+
+    // === US EQUITIES ===
+    WatchlistItem("US:NVDA", "Nvidia Corporation", "US Stocks", 145.2, 3.20),
+    WatchlistItem("US:AAPL", "Apple Inc", "US Stocks", 232.5, 0.45),
+    WatchlistItem("US:MSFT", "Microsoft Corporation", "US Stocks", 425.0, -0.22),
+    WatchlistItem("US:AMZN", "Amazon.com Inc", "US Stocks", 205.8, 1.15),
+    WatchlistItem("US:GOOGL", "Alphabet Inc (Google)", "US Stocks", 178.4, 0.65),
+    WatchlistItem("US:META", "Meta Platforms Inc", "US Stocks", 590.2, 1.85),
+    WatchlistItem("US:TSLA", "Tesla Inc", "US Stocks", 248.5, -1.90),
+
+    // === COMMODITIES & FOREX ===
+    WatchlistItem("CAPITALCOM:GOLD", "Gold Spot (XAU/USD)", "Commodities", 2685.2, 0.42),
+    WatchlistItem("CAPITALCOM:SILVER", "Silver Spot (XAG/USD)", "Commodities", 31.85, -0.65),
+    WatchlistItem("CAPITALCOM:OIL_CRUDE", "WTI Crude Oil", "Commodities", 69.40, -1.15),
+    WatchlistItem("CAPITALCOM:BRENT", "Brent Crude Oil", "Commodities", 73.15, -0.95),
+    WatchlistItem("FX:EURUSD", "Euro / US Dollar", "Forex", 1.0542, -0.18),
+    WatchlistItem("FX:GBPUSD", "British Pound / USD", "Forex", 1.2615, 0.12),
+    WatchlistItem("FX:USDJPY", "US Dollar / Japanese Yen", "Forex", 154.20, 0.35),
+
+    // === GLOBAL INDICES ===
     WatchlistItem("US:SPX", "S&P 500 Index", "Indices", 5870.5, 0.55),
-    WatchlistItem("US:NDX", "Nasdaq 100 Index", "Indices", 20450.0, 0.82)
+    WatchlistItem("US:NDX", "Nasdaq 100 Index", "Indices", 20450.0, 0.82),
+    WatchlistItem("US:DJI", "Dow Jones Industrial", "Indices", 43250.0, 0.28),
+    WatchlistItem("HK:HSI", "Hang Seng Index", "Indices", 19680.0, -0.45)
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -87,10 +122,10 @@ fun WatchlistSheet(
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("All") }
 
-    val categories = listOf("All", "IDX", "Crypto", "Commodities", "Indices")
+    val categories = listOf("All", "IDX", "Crypto", "US Stocks", "Commodities", "Forex", "Indices")
 
     val filteredList = remember(searchQuery, selectedCategory) {
-        DEFAULT_WATCHLIST.filter { item ->
+        INSTITUTIONAL_WATCHLIST.filter { item ->
             val matchesCategory = selectedCategory == "All" || item.category == selectedCategory
             val matchesQuery = item.symbol.contains(searchQuery, ignoreCase = true) ||
                     item.name.contains(searchQuery, ignoreCase = true)
@@ -115,7 +150,7 @@ fun WatchlistSheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Watchlist",
+                    text = "Markets Watchlist",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = PiaText
@@ -133,7 +168,7 @@ fun WatchlistSheet(
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                placeholder = { Text("Search symbols, e.g. BBCA, BTC...", color = PiaTextMuted, fontSize = 13.sp) },
+                placeholder = { Text("Search 45+ assets (BBCA, BTC, GOLD)...", color = PiaTextMuted, fontSize = 13.sp) },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Search,
@@ -184,7 +219,7 @@ fun WatchlistSheet(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(400.dp),
+                    .height(440.dp),
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 items(filteredList) { item ->

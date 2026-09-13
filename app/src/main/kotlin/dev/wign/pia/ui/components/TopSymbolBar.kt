@@ -51,11 +51,12 @@ fun TopSymbolBar(
     showRsi: Boolean,
     rsiValue: Double?,
     onToggleRsi: () -> Unit,
+    showTape: Boolean = true,
+    onToggleTape: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val timeframes = listOf("1m", "5m", "15m", "1h", "4h", "1D")
 
-    // Split exchange:ticker (e.g. BINANCE:BTCUSDT -> BINANCE, BTCUSDT)
     val parts = symbol.split(":")
     val exchange = if (parts.size > 1) parts[0] else "PIA"
     val ticker = if (parts.size > 1) parts[1] else symbol
@@ -83,7 +84,6 @@ fun TopSymbolBar(
                     .padding(vertical = 2.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Pulse indicator
                 Box(
                     modifier = Modifier
                         .size(7.dp)
@@ -101,7 +101,6 @@ fun TopSymbolBar(
                 )
                 Spacer(modifier = Modifier.width(5.dp))
 
-                // Exchange Pill
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(3.dp))
@@ -136,7 +135,6 @@ fun TopSymbolBar(
                     fontFamily = FontFamily.Monospace
                 )
 
-                // Change % Pill
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(4.dp))
@@ -188,8 +186,29 @@ fun TopSymbolBar(
                 }
             }
 
-            // Indicator Toggles
+            // Indicator Toggles & Tape Toggle
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                // Live Tape Toggle
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(if (showTape) PiaAccent.copy(alpha = 0.2f) else PiaBorder.copy(alpha = 0.4f))
+                        .border(
+                            0.5.dp,
+                            if (showTape) PiaAccent else PiaBorder,
+                            RoundedCornerShape(4.dp)
+                        )
+                        .clickable { onToggleTape() }
+                        .padding(horizontal = 6.dp, vertical = 3.dp)
+                ) {
+                    Text(
+                        text = "TAPE",
+                        color = if (showTape) PiaAccent else PiaTextMuted,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+
                 // EMA 20
                 Box(
                     modifier = Modifier

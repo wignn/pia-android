@@ -13,9 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Analytics
-import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Feed
-import androidx.compose.material.icons.filled.GridOn
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ShowChart
 import androidx.compose.material.icons.filled.ViewList
@@ -46,17 +44,14 @@ fun BottomNavBar(
     modifier: Modifier = Modifier
 ) {
     val tabs = listOf(
-        NavTab("chart", "Chart", Icons.Default.ShowChart),
         NavTab("watchlist", "Watchlist", Icons.Default.ViewList),
-        NavTab("news", "News", Icons.Default.Feed),
-        NavTab("heatmap", "Heatmap", Icons.Default.GridOn),
-        NavTab("intel", "Intel", Icons.Default.Analytics),
-        NavTab("calendar", "Calendar", Icons.Default.CalendarMonth),
+        NavTab("chart", "Chart", Icons.Default.ShowChart),
+        NavTab("markets", "Markets", Icons.Default.Analytics),
+        NavTab("social", "Social & News", Icons.Default.Feed),
         NavTab("settings", "Settings", Icons.Default.Settings)
     )
 
     Column(modifier = modifier.fillMaxWidth()) {
-        // Subtle top border line
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -69,8 +64,8 @@ fun BottomNavBar(
                 .fillMaxWidth()
                 .background(PiaCard)
                 .navigationBarsPadding()
-                .height(50.dp)
-                .padding(horizontal = 2.dp),
+                .height(52.dp)
+                .padding(horizontal = 4.dp),
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -80,7 +75,7 @@ fun BottomNavBar(
                     modifier = Modifier
                         .weight(1f)
                         .clickable { onTabSelected(tab.id) }
-                        .padding(vertical = 2.dp),
+                        .padding(vertical = 4.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
@@ -88,13 +83,13 @@ fun BottomNavBar(
                         imageVector = tab.icon,
                         contentDescription = tab.label,
                         tint = if (isSelected) PiaAccent else PiaTextMuted,
-                        modifier = Modifier.size(19.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                     Text(
                         text = tab.label,
                         color = if (isSelected) PiaAccent else PiaTextMuted,
-                        fontSize = 9.sp,
-                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                        fontSize = 10.sp,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                         maxLines = 1,
                         letterSpacing = (-0.2).sp
                     )

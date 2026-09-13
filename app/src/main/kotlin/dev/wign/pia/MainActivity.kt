@@ -3,7 +3,6 @@ package dev.wign.pia
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,17 +20,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.wign.pia.ui.chart.ChartViewModel
 import dev.wign.pia.ui.chart.PiaChartView
 import dev.wign.pia.ui.components.BottomNavBar
 import dev.wign.pia.ui.components.CrosshairHud
+import dev.wign.pia.ui.components.RecentTradesTape
 import dev.wign.pia.ui.components.TopSymbolBar
 import dev.wign.pia.ui.components.WatchlistSheet
-import dev.wign.pia.ui.screens.CalendarScreen
-import dev.wign.pia.ui.screens.HeatmapScreen
-import dev.wign.pia.ui.screens.IntelScreen
+import dev.wign.pia.ui.screens.MarketsScreen
 import dev.wign.pia.ui.screens.NewsScreen
 import dev.wign.pia.ui.screens.SettingsScreen
+import dev.wign.pia.ui.screens.WatchlistScreen
 import dev.wign.pia.ui.theme.PiaBg
 import dev.wign.pia.ui.theme.PiaTerminalTheme
 import kotlinx.coroutines.launch
@@ -63,10 +63,12 @@ fun MainScreen(viewModel: ChartViewModel) {
     val emaSeries by viewModel.emaSeries.collectAsState()
     val showRsi by viewModel.showRsi14.collectAsState()
     val rsiValue by viewModel.rsi14.collectAsState()
+    val showTape by viewModel.showTape.collectAsState()
+    val recentTrades by viewModel.recentTrades.collectAsState()
     val crosshairCandle by viewModel.crosshairCandle.collectAsState()
 
     var activeTab by remember { mutableStateOf("chart") }
-    var isWatchlistOpen by remember { mutableStateOf(false) }
+    var isWatchlistModalOpen by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
 
@@ -78,11 +80,7 @@ fun MainScreen(viewModel: ChartViewModel) {
             BottomNavBar(
                 activeTab = activeTab,
                 onTabSelected = { tab ->
-                    if (tab == "watchlist") {
-                        isWatchlistOpen = true
-                    } else {
-                        activeTab = tab
-                    }
+                    activeTab = tab
                 }
             )
         }
@@ -102,13 +100,15 @@ fun MainScreen(viewModel: ChartViewModel) {
                             currentTimeframe = timeframe,
                             isConnected = isConnected,
                             onTimeframeSelected = { viewModel.setTimeframe(it) },
-                            onOpenWatchlist = { isWatchlistOpen = true },
+                            onOpenWatchlist = { isWatchlistModalOpen = true },
                             showEma = showEma,
                             emaValue = emaValue,
                             onToggleEma = { viewModel.toggleEma() },
                             showRsi = showRsi,
                             rsiValue = rsiValue,
-                            onToggleRsi = { viewModel.toggleRsi() }
+                            onToggleRsi = { viewModel.toggleRsi() },
+                            showTape = showTape,
+                            onToggleTape = { viewModel.toggleTape() }
                         )
 
                         // Compact OHLCV crosshair HUD
@@ -128,16 +128,28 @@ fun MainScreen(viewModel: ChartViewModel) {
                                 .fillMaxWidth()
                                 .weight(1f)
                         )
+
+                        // Real-time trades tape drawer
+                        if (showTape && recentTrades.isNotEmpty()) {
+                            RecentTradesTape(trades = recentTrades)
+                        }
                     }
                 }
-                "news" -> NewsScreen()
-                "intel" -> IntelScreen()
-                "calendar" -> CalendarScreen()
-                "heatmap" -> HeatmapScreen()
+                "watchlist" -> {
+                    WatchlistScreen(
+                        currentSymbol = symbol,
+                        onSymbolSelected = { selected ->
+                            viewModel.selectSymbol(selected)
+                            activeTab = "chart"
+                        }
+                    )
+                }
+                "markets" -> MarketsScreen()
+                "social" -> NewsScreen()
                 "settings" -> SettingsScreen()
             }
 
-            if (isWatchlistOpen) {
+            if (isWatchlistModalOpen) {
                 WatchlistSheet(
                     sheetState = sheetState,
                     currentSymbol = symbol,
@@ -146,7 +158,7 @@ fun MainScreen(viewModel: ChartViewModel) {
                     },
                     onDismiss = {
                         scope.launch { sheetState.hide() }.invokeOnCompletion {
-                            isWatchlistOpen = false
+                            isWatchlistModalOpen = false
                         }
                     }
                 )

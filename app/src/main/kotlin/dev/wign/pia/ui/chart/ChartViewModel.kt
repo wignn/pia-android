@@ -3,6 +3,7 @@ package dev.wign.pia.ui.chart
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.wign.pia.data.Candle
+import dev.wign.pia.data.MarketTick
 import dev.wign.pia.data.NativeBridge
 import dev.wign.pia.data.PiaApiClient
 import dev.wign.pia.data.PiaWsClient
@@ -48,6 +49,12 @@ class ChartViewModel(
     private val _showRsi14 = MutableStateFlow(false)
     val showRsi14: StateFlow<Boolean> = _showRsi14.asStateFlow()
 
+    private val _showTape = MutableStateFlow(true)
+    val showTape: StateFlow<Boolean> = _showTape.asStateFlow()
+
+    private val _recentTrades = MutableStateFlow<List<MarketTick>>(emptyList())
+    val recentTrades: StateFlow<List<MarketTick>> = _recentTrades.asStateFlow()
+
     private val _crosshairCandle = MutableStateFlow<Candle?>(null)
     val crosshairCandle: StateFlow<Candle?> = _crosshairCandle.asStateFlow()
 
@@ -58,6 +65,10 @@ class ChartViewModel(
 
         viewModelScope.launch {
             wsClient.ticks.collect { tick ->
+                // Add to recent trades tape
+                val updatedTrades = (listOf(tick) + _recentTrades.value).take(25)
+                _recentTrades.value = updatedTrades
+
                 val cleanCurrent = if (_currentSymbol.value.contains(":")) {
                     _currentSymbol.value.substringAfter(":")
                 } else {
@@ -98,6 +109,7 @@ class ChartViewModel(
     fun selectSymbol(symbol: String) {
         if (_currentSymbol.value == symbol) return
         _currentSymbol.value = symbol
+        _recentTrades.value = emptyList()
         loadSymbolData(symbol, _timeframe.value)
     }
 
@@ -122,6 +134,10 @@ class ChartViewModel(
 
     fun toggleRsi() {
         _showRsi14.value = !_showRsi14.value
+    }
+
+    fun toggleTape() {
+        _showTape.value = !_showTape.value
     }
 
     fun setCrosshairTimestamp(timeSec: Long?) {
