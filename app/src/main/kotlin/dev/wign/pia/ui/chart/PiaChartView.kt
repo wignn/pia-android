@@ -102,20 +102,19 @@ fun PiaChartView(
                 )
             }
 
-            // Dedicated volume price scale pinned to bottom 18%
-            api.priceScale(PriceScaleId("volume")).applyOptions(
-                PriceScaleOptions(
-                    scaleMargins = PriceScaleMargins(top = 0.82f, bottom = 0.0f)
-                )
-            )
-
-            // Volume Histogram Series
+            // Volume Histogram Series with isolated priceScale margins
             api.addHistogramSeries(
                 options = HistogramSeriesOptions(
-                    priceScaleId = PriceScaleId("volume"),
                     priceLineVisible = false
                 ),
-                onSeriesCreated = { series -> volumeSeriesApi = series }
+                onSeriesCreated = { series ->
+                    volumeSeriesApi = series
+                    series.priceScale().applyOptions(
+                        PriceScaleOptions(
+                            scaleMargins = PriceScaleMargins(top = 0.82f, bottom = 0.0f)
+                        )
+                    )
+                }
             )
 
             // Dynamic Main Series according to chartType
