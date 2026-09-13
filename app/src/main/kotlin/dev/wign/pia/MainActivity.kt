@@ -54,6 +54,7 @@ fun MainScreen(viewModel: ChartViewModel) {
     val symbol by viewModel.currentSymbol.collectAsState()
     val timeframe by viewModel.timeframe.collectAsState()
     val lastPrice by viewModel.lastPrice.collectAsState()
+    val isConnected by viewModel.isConnected.collectAsState()
     val historicalCandles by viewModel.historicalCandles.collectAsState()
     val latestCandle by viewModel.latestCandle.collectAsState()
 
@@ -99,6 +100,7 @@ fun MainScreen(viewModel: ChartViewModel) {
                             symbol = symbol,
                             lastPrice = lastPrice,
                             currentTimeframe = timeframe,
+                            isConnected = isConnected,
                             onTimeframeSelected = { viewModel.setTimeframe(it) },
                             onOpenWatchlist = { isWatchlistOpen = true },
                             showEma = showEma,

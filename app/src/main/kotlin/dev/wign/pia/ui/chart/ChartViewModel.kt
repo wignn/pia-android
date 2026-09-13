@@ -31,6 +31,8 @@ class ChartViewModel(
     private val _lastPrice = MutableStateFlow(0.0)
     val lastPrice: StateFlow<Double> = _lastPrice.asStateFlow()
 
+    val isConnected: StateFlow<Boolean> = wsClient.isConnected
+
     private val _ema20 = MutableStateFlow<Double?>(null)
     val ema20: StateFlow<Double?> = _ema20.asStateFlow()
 
@@ -76,14 +78,17 @@ class ChartViewModel(
                         _rsi14.value = rsi
                     }
 
-                    val candle = NativeBridge.conflateTick(
+                    val rawCandle = NativeBridge.conflateTick(
                         symbol = tick.symbol,
                         price = tick.price,
                         volume = tick.volume,
                         timestampMs = tick.timestamp
                     )
-                    if (candle != null) {
-                        _latestCandle.value = candle
+                    if (rawCandle != null) {
+                        // Guard against TradingView drop by ensuring candle time >= last history time
+                        val lastHistoryTime = _historicalCandles.value.lastOrNull()?.time ?: 0L
+                        val alignedTime = maxOf(rawCandle.time, lastHistoryTime)
+                        _latestCandle.value = rawCandle.copy(time = alignedTime)
                     }
                 }
             }
