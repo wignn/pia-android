@@ -9,8 +9,12 @@ import dev.wign.pia.data.NativeBridge
 import dev.wign.pia.data.PiaApiClient
 import dev.wign.pia.data.PiaWsClient
 import dev.wign.pia.data.PreferencesManager
+import dev.wign.pia.data.PriceAlert
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -67,11 +71,11 @@ class ChartViewModel(
     private val _recentTrades = MutableStateFlow<List<MarketTick>>(emptyList())
     val recentTrades: StateFlow<List<MarketTick>> = _recentTrades.asStateFlow()
 
-    private val _alerts = MutableStateFlow<List<dev.wign.pia.data.PriceAlert>>(emptyList())
-    val alerts: StateFlow<List<dev.wign.pia.data.PriceAlert>> = _alerts.asStateFlow()
+    private val _alerts = MutableStateFlow<List<PriceAlert>>(emptyList())
+    val alerts: StateFlow<List<PriceAlert>> = _alerts.asStateFlow()
 
-    private val _triggeredAlert = kotlinx.coroutines.flow.MutableSharedFlow<dev.wign.pia.data.PriceAlert>()
-    val triggeredAlert = _triggeredAlert.asSharedFlow()
+    private val _triggeredAlert = MutableSharedFlow<PriceAlert>(extraBufferCapacity = 64)
+    val triggeredAlert: SharedFlow<PriceAlert> = _triggeredAlert.asSharedFlow()
 
     private val _crosshairCandle = MutableStateFlow<Candle?>(null)
     val crosshairCandle: StateFlow<Candle?> = _crosshairCandle.asStateFlow()

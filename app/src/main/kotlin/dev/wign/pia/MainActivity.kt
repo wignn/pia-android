@@ -118,11 +118,7 @@ fun MainScreen(viewModel: ChartViewModel) {
     LaunchedEffect(Unit) {
         viewModel.triggeredAlert.collect { alert ->
             val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                vibrator?.vibrate(VibrationEffect.createOneShot(350L, VibrationEffect.DEFAULT_AMPLITUDE))
-            } else {
-                vibrator?.vibrate(350L)
-            }
+            vibrator?.vibrate(VibrationEffect.createOneShot(350L, VibrationEffect.DEFAULT_AMPLITUDE))
             Toast.makeText(
                 context,
                 "🔔 ALERT TRIGGERED: ${alert.symbol} crossed ${String.format("%,.2f", alert.targetPrice)}!",
