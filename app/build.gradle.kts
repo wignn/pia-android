@@ -75,6 +75,7 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.moshi)
     implementation(libs.coroutines.android)
+    implementation(libs.androidx.datastore.preferences)
 
     // TradingView Lightweight Charts
     implementation(libs.lightweight.charts)

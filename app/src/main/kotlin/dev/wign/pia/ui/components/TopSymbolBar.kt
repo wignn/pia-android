@@ -42,8 +42,10 @@ fun TopSymbolBar(
     lastPrice: Double,
     changePercent: Double = 0.0,
     currentTimeframe: String,
+    chartType: String = "candles",
     isConnected: Boolean = true,
     onTimeframeSelected: (String) -> Unit,
+    onCycleChartType: () -> Unit = {},
     onOpenWatchlist: () -> Unit,
     showEma: Boolean,
     emaValue: Double?,
@@ -63,6 +65,13 @@ fun TopSymbolBar(
 
     val isPositive = changePercent >= 0.0
     val trendColor = if (isPositive) PiaUp else PiaDown
+
+    val chartTypeLabel = when (chartType) {
+        "line" -> "Line"
+        "area" -> "Area"
+        "bars" -> "Bars"
+        else -> "Candles"
+    }
 
     Column(
         modifier = modifier
@@ -156,17 +165,35 @@ fun TopSymbolBar(
 
         Spacer(modifier = Modifier.size(6.dp))
 
-        // Row 2: Timeframe Pills & Indicator Toggles
+        // Row 2: Timeframe Pills, Chart Type Switcher & Indicator Toggles
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Timeframe Selector
+            // Timeframe & Chart Type Selector
             Row(
                 modifier = Modifier.horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(3.dp)
+                horizontalArrangement = Arrangement.spacedBy(3.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                // Chart Type Cycle Button
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(PiaAccent.copy(alpha = 0.25f))
+                        .border(0.5.dp, PiaAccent, RoundedCornerShape(4.dp))
+                        .clickable { onCycleChartType() }
+                        .padding(horizontal = 6.dp, vertical = 3.dp)
+                ) {
+                    Text(
+                        text = chartTypeLabel,
+                        color = PiaAccent,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
                 timeframes.forEach { tf ->
                     val isSelected = tf == currentTimeframe
                     Box(

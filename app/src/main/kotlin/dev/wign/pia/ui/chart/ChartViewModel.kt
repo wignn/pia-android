@@ -1,27 +1,36 @@
 package dev.wign.pia.ui.chart
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dev.wign.pia.data.Candle
 import dev.wign.pia.data.MarketTick
 import dev.wign.pia.data.NativeBridge
 import dev.wign.pia.data.PiaApiClient
 import dev.wign.pia.data.PiaWsClient
+import dev.wign.pia.data.PreferencesManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class ChartViewModel(
-    private val wsClient: PiaWsClient = PiaWsClient(),
-    private val apiClient: PiaApiClient = PiaApiClient()
-) : ViewModel() {
+    application: Application
+) : AndroidViewModel(application) {
+
+    private val prefs = PreferencesManager(application)
+    private val wsClient = PiaWsClient()
+    private val apiClient = PiaApiClient()
 
     private val _currentSymbol = MutableStateFlow("BINANCE:BTCUSDT")
     val currentSymbol: StateFlow<String> = _currentSymbol.asStateFlow()
 
     private val _timeframe = MutableStateFlow("1m")
     val timeframe: StateFlow<String> = _timeframe.asStateFlow()
+
+    private val _chartType = MutableStateFlow("candles")
+    val chartType: StateFlow<String> = _chartType.asStateFlow()
 
     private val _historicalCandles = MutableStateFlow<List<Candle>>(emptyList())
     val historicalCandles: StateFlow<List<Candle>> = _historicalCandles.asStateFlow()
@@ -61,11 +70,29 @@ class ChartViewModel(
     init {
         NativeBridge.initConflator(60)
         wsClient.connect()
-        loadSymbolData(_currentSymbol.value, _timeframe.value)
+
+        viewModelScope.launch {
+            // Restore persistent preferences
+            val savedSymbol = prefs.lastSymbol.first()
+            val savedTf = prefs.lastTimeframe.first()
+            val savedType = prefs.chartType.first()
+            val savedEma = prefs.showEma.first()
+            val savedRsi = prefs.showRsi.first()
+            val savedTape = prefs.showTape.first()
+
+            _currentSymbol.value = savedSymbol
+            _timeframe.value = savedTf
+            _chartType.value = savedType
+            _showEma20.value = savedEma
+            _showRsi14.value = savedRsi
+            _showTape.value = savedTape
+
+            loadSymbolData(savedSymbol, savedTf)
+        }
 
         viewModelScope.launch {
             wsClient.ticks.collect { tick ->
-                // Add to recent trades tape
+                // Prepend to tape
                 val updatedTrades = (listOf(tick) + _recentTrades.value).take(25)
                 _recentTrades.value = updatedTrades
 
@@ -96,7 +123,6 @@ class ChartViewModel(
                         timestampMs = tick.timestamp
                     )
                     if (rawCandle != null) {
-                        // Guard against TradingView drop by ensuring candle time >= last history time
                         val lastHistoryTime = _historicalCandles.value.lastOrNull()?.time ?: 0L
                         val alignedTime = maxOf(rawCandle.time, lastHistoryTime)
                         _latestCandle.value = rawCandle.copy(time = alignedTime)
@@ -110,6 +136,7 @@ class ChartViewModel(
         if (_currentSymbol.value == symbol) return
         _currentSymbol.value = symbol
         _recentTrades.value = emptyList()
+        viewModelScope.launch { prefs.saveSymbol(symbol) }
         loadSymbolData(symbol, _timeframe.value)
     }
 
@@ -125,19 +152,37 @@ class ChartViewModel(
             else -> 60L
         }
         NativeBridge.initConflator(sec)
+        viewModelScope.launch { prefs.saveTimeframe(tf) }
         loadSymbolData(_currentSymbol.value, tf)
     }
 
+    fun cycleChartType() {
+        val next = when (_chartType.value) {
+            "candles" -> "line"
+            "line" -> "area"
+            "area" -> "bars"
+            else -> "candles"
+        }
+        _chartType.value = next
+        viewModelScope.launch { prefs.saveChartType(next) }
+    }
+
     fun toggleEma() {
-        _showEma20.value = !_showEma20.value
+        val next = !_showEma20.value
+        _showEma20.value = next
+        viewModelScope.launch { prefs.saveShowEma(next) }
     }
 
     fun toggleRsi() {
-        _showRsi14.value = !_showRsi14.value
+        val next = !_showRsi14.value
+        _showRsi14.value = next
+        viewModelScope.launch { prefs.saveShowRsi(next) }
     }
 
     fun toggleTape() {
-        _showTape.value = !_showTape.value
+        val next = !_showTape.value
+        _showTape.value = next
+        viewModelScope.launch { prefs.saveShowTape(next) }
     }
 
     fun setCrosshairTimestamp(timeSec: Long?) {
@@ -160,7 +205,6 @@ class ChartViewModel(
                 _historicalCandles.value = candles
                 _lastPrice.value = candles.last().close
 
-                // Compute initial batch EMA curve via NDK
                 val closes = candles.map { it.close }.toDoubleArray()
                 val emaValues = NativeBridge.computeEmaSeries(20, closes)
                 _emaSeries.value = candles.mapIndexed { i, c -> Pair(c.time, emaValues[i]) }

@@ -53,6 +53,7 @@ class MainActivity : ComponentActivity() {
 fun MainScreen(viewModel: ChartViewModel) {
     val symbol by viewModel.currentSymbol.collectAsState()
     val timeframe by viewModel.timeframe.collectAsState()
+    val chartType by viewModel.chartType.collectAsState()
     val lastPrice by viewModel.lastPrice.collectAsState()
     val isConnected by viewModel.isConnected.collectAsState()
     val historicalCandles by viewModel.historicalCandles.collectAsState()
@@ -98,8 +99,10 @@ fun MainScreen(viewModel: ChartViewModel) {
                             symbol = symbol,
                             lastPrice = lastPrice,
                             currentTimeframe = timeframe,
+                            chartType = chartType,
                             isConnected = isConnected,
                             onTimeframeSelected = { viewModel.setTimeframe(it) },
+                            onCycleChartType = { viewModel.cycleChartType() },
                             onOpenWatchlist = { isWatchlistModalOpen = true },
                             showEma = showEma,
                             emaValue = emaValue,
@@ -121,6 +124,7 @@ fun MainScreen(viewModel: ChartViewModel) {
                             emaSeries = emaSeries,
                             latestEma = emaValue,
                             showEma = showEma,
+                            chartType = chartType,
                             onCrosshairMoved = { timeSec ->
                                 viewModel.setCrosshairTimestamp(timeSec)
                             },
