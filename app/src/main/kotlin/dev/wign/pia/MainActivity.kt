@@ -5,9 +5,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -25,6 +27,11 @@ import dev.wign.pia.ui.components.BottomNavBar
 import dev.wign.pia.ui.components.CrosshairHud
 import dev.wign.pia.ui.components.TopSymbolBar
 import dev.wign.pia.ui.components.WatchlistSheet
+import dev.wign.pia.ui.screens.CalendarScreen
+import dev.wign.pia.ui.screens.HeatmapScreen
+import dev.wign.pia.ui.screens.IntelScreen
+import dev.wign.pia.ui.screens.NewsScreen
+import dev.wign.pia.ui.screens.SettingsScreen
 import dev.wign.pia.ui.theme.PiaBg
 import dev.wign.pia.ui.theme.PiaTerminalTheme
 import kotlinx.coroutines.launch
@@ -71,50 +78,63 @@ fun MainScreen(viewModel: ChartViewModel) {
             BottomNavBar(
                 activeTab = activeTab,
                 onTabSelected = { tab ->
-                    activeTab = tab
                     if (tab == "watchlist") {
                         isWatchlistOpen = true
+                    } else {
+                        activeTab = tab
                     }
                 }
             )
         }
     ) { innerPadding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(PiaBg)
+                .padding(innerPadding)
         ) {
-            TopSymbolBar(
-                symbol = symbol,
-                lastPrice = lastPrice,
-                currentTimeframe = timeframe,
-                onTimeframeSelected = { viewModel.setTimeframe(it) },
-                onOpenWatchlist = { isWatchlistOpen = true },
-                showEma = showEma,
-                emaValue = emaValue,
-                onToggleEma = { viewModel.toggleEma() },
-                showRsi = showRsi,
-                rsiValue = rsiValue,
-                onToggleRsi = { viewModel.toggleRsi() }
-            )
+            when (activeTab) {
+                "chart" -> {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        TopSymbolBar(
+                            symbol = symbol,
+                            lastPrice = lastPrice,
+                            currentTimeframe = timeframe,
+                            onTimeframeSelected = { viewModel.setTimeframe(it) },
+                            onOpenWatchlist = { isWatchlistOpen = true },
+                            showEma = showEma,
+                            emaValue = emaValue,
+                            onToggleEma = { viewModel.toggleEma() },
+                            showRsi = showRsi,
+                            rsiValue = rsiValue,
+                            onToggleRsi = { viewModel.toggleRsi() }
+                        )
 
-            // Crosshair / Current OHLCV HUD
-            CrosshairHud(candle = displayHudCandle)
+                        // Compact OHLCV crosshair HUD
+                        CrosshairHud(candle = displayHudCandle)
 
-            // Interactive Chart View
-            PiaChartView(
-                historicalCandles = historicalCandles,
-                latestCandle = latestCandle,
-                emaSeries = emaSeries,
-                latestEma = emaValue,
-                showEma = showEma,
-                onCrosshairMoved = { timeSec ->
-                    viewModel.setCrosshairTimestamp(timeSec)
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-            )
+                        // Full-bleed Lightweight Charts View
+                        PiaChartView(
+                            historicalCandles = historicalCandles,
+                            latestCandle = latestCandle,
+                            emaSeries = emaSeries,
+                            latestEma = emaValue,
+                            showEma = showEma,
+                            onCrosshairMoved = { timeSec ->
+                                viewModel.setCrosshairTimestamp(timeSec)
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                        )
+                    }
+                }
+                "news" -> NewsScreen()
+                "intel" -> IntelScreen()
+                "calendar" -> CalendarScreen()
+                "heatmap" -> HeatmapScreen()
+                "settings" -> SettingsScreen()
+            }
 
             if (isWatchlistOpen) {
                 WatchlistSheet(
