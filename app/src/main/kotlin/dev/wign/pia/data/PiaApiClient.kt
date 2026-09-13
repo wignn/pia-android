@@ -27,6 +27,24 @@ data class HistoricalCandleItem(
     @Json(name = "volume") val volume: Double = 0.0
 )
 
+@JsonClass(generateAdapter = true)
+data class SocialPostsResponse(
+    @Json(name = "has_more") val hasMore: Boolean = false,
+    @Json(name = "items") val items: List<SocialPostItem> = emptyList()
+)
+
+@JsonClass(generateAdapter = true)
+data class SocialPostItem(
+    @Json(name = "author_username") val authorUsername: String = "",
+    @Json(name = "author_display_name") val authorDisplayName: String = "",
+    @Json(name = "text") val text: String = "",
+    @Json(name = "url") val url: String = "",
+    @Json(name = "created_at") val createdAt: String = "",
+    @Json(name = "platform") val platform: String = "twitter",
+    @Json(name = "like_count") val likeCount: Long = 0,
+    @Json(name = "retweet_count") val retweetCount: Long = 0
+)
+
 class PiaApiClient(
     private val baseUrl: String = "https://api-engine.wign.dev",
     private val apiKey: String = "silvia"
@@ -38,13 +56,13 @@ class PiaApiClient(
 
     private val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
     private val historyAdapter = moshi.adapter(HistoryPage::class.java)
+    private val socialAdapter = moshi.adapter(SocialPostsResponse::class.java)
 
     suspend fun getHistory(
         symbol: String,
         resolution: String = "1m",
         limit: Int = 120
     ): List<Candle> = withContext(Dispatchers.IO) {
-        // Normalize symbol: strip exchange prefix (e.g. BINANCE:BTCUSDT -> BTCUSDT, IDX:BBCA -> BBCA)
         val cleanSymbol = if (symbol.contains(":")) symbol.substringAfter(":") else symbol
         val url = "$baseUrl/api/v1/market/history/$cleanSymbol?resolution=$resolution&limit=$limit"
         val request = Request.Builder()
@@ -59,7 +77,6 @@ class PiaApiClient(
                 val bodyString = response.body?.string() ?: return@withContext emptyList()
                 val page = historyAdapter.fromJson(bodyString) ?: return@withContext emptyList()
 
-                // Sort strictly ascending by time and remove duplicates for TradingView compliance
                 page.items
                     .map { item ->
                         Candle(
@@ -74,6 +91,26 @@ class PiaApiClient(
                     }
                     .distinctBy { it.time }
                     .sortedBy { it.time }
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    suspend fun getSocialPosts(limit: Int = 30): List<SocialPostItem> = withContext(Dispatchers.IO) {
+        val url = "$baseUrl/api/v1/social/posts?limit=$limit"
+        val request = Request.Builder()
+            .url(url)
+            .addHeader("x-api-key", apiKey)
+            .get()
+            .build()
+
+        try {
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) return@withContext emptyList()
+                val bodyString = response.body?.string() ?: return@withContext emptyList()
+                val page = socialAdapter.fromJson(bodyString) ?: return@withContext emptyList()
+                page.items
             }
         } catch (e: Exception) {
             emptyList()

@@ -17,10 +17,16 @@ import com.tradingview.lightweightcharts.api.chart.models.color.IntColor
 import com.tradingview.lightweightcharts.api.chart.models.color.surface.SolidColor
 import com.tradingview.lightweightcharts.api.interfaces.SeriesApi
 import com.tradingview.lightweightcharts.api.options.models.CandlestickSeriesOptions
+import com.tradingview.lightweightcharts.api.options.models.CrosshairLineOptions
+import com.tradingview.lightweightcharts.api.options.models.CrosshairOptions
+import com.tradingview.lightweightcharts.api.options.models.GridLineOptions
+import com.tradingview.lightweightcharts.api.options.models.GridOptions
 import com.tradingview.lightweightcharts.api.options.models.LayoutOptions
 import com.tradingview.lightweightcharts.api.options.models.LineSeriesOptions
 import com.tradingview.lightweightcharts.api.options.models.PriceScaleOptions
 import com.tradingview.lightweightcharts.api.options.models.TimeScaleOptions
+import com.tradingview.lightweightcharts.api.series.enums.CrosshairMode
+import com.tradingview.lightweightcharts.api.series.enums.LineStyle
 import com.tradingview.lightweightcharts.api.series.enums.LineWidth
 import com.tradingview.lightweightcharts.api.series.models.CandlestickData
 import com.tradingview.lightweightcharts.api.series.models.LineData
@@ -50,17 +56,35 @@ fun PiaChartView(
                 ViewGroup.LayoutParams.MATCH_PARENT
             )
             api.applyOptions {
+                // Calm, soothing dark background without eye-straining bright pixels
                 layout = LayoutOptions(
-                    background = SolidColor(IntColor(0xFF131722.toInt())),
-                    textColor = IntColor(0xFFD1D4DC.toInt())
+                    background = SolidColor(IntColor(0xFF0E1118.toInt())),
+                    textColor = IntColor(0xFF9EA2AE.toInt())
+                )
+                // Disable harsh, dizzying grid lines
+                grid = GridOptions(
+                    vertLines = GridLineOptions(visible = false),
+                    horzLines = GridLineOptions(visible = false)
+                )
+                // Subtle non-intrusive crosshair
+                crosshair = CrosshairOptions(
+                    mode = CrosshairMode.NORMAL,
+                    vertLine = CrosshairLineOptions(
+                        color = IntColor(0x33787B86.toInt()),
+                        style = LineStyle.DASHED
+                    ),
+                    horzLine = CrosshairLineOptions(
+                        color = IntColor(0x33787B86.toInt()),
+                        style = LineStyle.DASHED
+                    )
                 )
                 timeScale = TimeScaleOptions(
-                    borderColor = IntColor(0xFF2A2E39.toInt()),
+                    borderColor = IntColor(0xFF1E222D.toInt()),
                     timeVisible = true,
                     secondsVisible = false
                 )
                 rightPriceScale = PriceScaleOptions(
-                    borderColor = IntColor(0xFF2A2E39.toInt())
+                    borderColor = IntColor(0xFF1E222D.toInt())
                 )
             }
 
