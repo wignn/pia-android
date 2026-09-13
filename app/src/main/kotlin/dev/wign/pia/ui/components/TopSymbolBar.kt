@@ -1,6 +1,7 @@
 package dev.wign.pia.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -10,8 +11,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -21,12 +24,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.wign.pia.ui.theme.PiaAccent
 import dev.wign.pia.ui.theme.PiaBorder
 import dev.wign.pia.ui.theme.PiaCard
+import dev.wign.pia.ui.theme.PiaDown
 import dev.wign.pia.ui.theme.PiaText
 import dev.wign.pia.ui.theme.PiaTextMuted
 import dev.wign.pia.ui.theme.PiaUp
@@ -35,7 +40,9 @@ import dev.wign.pia.ui.theme.PiaUp
 fun TopSymbolBar(
     symbol: String,
     lastPrice: Double,
+    changePercent: Double = 0.0,
     currentTimeframe: String,
+    isConnected: Boolean = true,
     onTimeframeSelected: (String) -> Unit,
     onOpenWatchlist: () -> Unit,
     showEma: Boolean,
@@ -46,7 +53,15 @@ fun TopSymbolBar(
     onToggleRsi: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val timeframes = listOf("1m", "5m", "15m", "1h", "1D")
+    val timeframes = listOf("1m", "5m", "15m", "1h", "4h", "1D")
+
+    // Split exchange:ticker (e.g. BINANCE:BTCUSDT -> BINANCE, BTCUSDT)
+    val parts = symbol.split(":")
+    val exchange = if (parts.size > 1) parts[0] else "PIA"
+    val ticker = if (parts.size > 1) parts[1] else symbol
+
+    val isPositive = changePercent >= 0.0
+    val trendColor = if (isPositive) PiaUp else PiaDown
 
     Column(
         modifier = modifier
@@ -54,108 +69,180 @@ fun TopSymbolBar(
             .background(PiaCard)
             .padding(horizontal = 12.dp, vertical = 6.dp)
     ) {
+        // Row 1: Symbol, Exchange badge, Connection Dot, Price, Change Badge
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Symbol selector button
+            // Ticker & Exchange
             Row(
                 modifier = Modifier
                     .clip(RoundedCornerShape(6.dp))
                     .clickable { onOpenWatchlist() }
-                    .padding(vertical = 4.dp, horizontal = 2.dp),
+                    .padding(vertical = 2.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = symbol,
-                            color = PiaText,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Icon(
-                            imageVector = Icons.Default.KeyboardArrowDown,
-                            contentDescription = "Select Symbol",
-                            tint = PiaTextMuted
-                        )
-                    }
+                // Pulse indicator
+                Box(
+                    modifier = Modifier
+                        .size(7.dp)
+                        .clip(CircleShape)
+                        .background(if (isConnected) PiaUp else PiaDown)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+
+                Text(
+                    text = ticker,
+                    color = PiaText,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.SansSerif
+                )
+                Spacer(modifier = Modifier.width(5.dp))
+
+                // Exchange Pill
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(3.dp))
+                        .background(PiaBorder)
+                        .padding(horizontal = 4.dp, vertical = 1.dp)
+                ) {
                     Text(
-                        text = if (lastPrice > 0) String.format("%.2f", lastPrice) else "--",
-                        color = PiaUp,
-                        fontSize = 13.sp,
+                        text = exchange,
+                        color = PiaTextMuted,
+                        fontSize = 9.sp,
                         fontWeight = FontWeight.SemiBold
                     )
                 }
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowDown,
+                    contentDescription = "Select Symbol",
+                    tint = PiaTextMuted,
+                    modifier = Modifier.size(18.dp)
+                )
             }
 
-            // Timeframe selector
+            // Price & Change Pill
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text(
+                    text = if (lastPrice > 0) formatPrice(lastPrice, symbol) else "--",
+                    color = PiaText,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Monospace
+                )
+
+                // Change % Pill
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(trendColor.copy(alpha = 0.15f))
+                        .border(0.5.dp, trendColor.copy(alpha = 0.4f), RoundedCornerShape(4.dp))
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                ) {
+                    val sign = if (isPositive) "+" else ""
+                    Text(
+                        text = "$sign${String.format("%.2f", changePercent)}%",
+                        color = trendColor,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.Monospace
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.size(6.dp))
+
+        // Row 2: Timeframe Pills & Indicator Toggles
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Timeframe Selector
             Row(
                 modifier = Modifier.horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                horizontalArrangement = Arrangement.spacedBy(3.dp)
             ) {
                 timeframes.forEach { tf ->
                     val isSelected = tf == currentTimeframe
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(4.dp))
-                            .background(if (isSelected) PiaAccent else PiaBorder)
+                            .background(if (isSelected) PiaAccent else PiaBorder.copy(alpha = 0.5f))
                             .clickable { onTimeframeSelected(tf) }
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                            .padding(horizontal = 7.dp, vertical = 3.dp)
                     ) {
                         Text(
                             text = tf,
                             color = if (isSelected) PiaText else PiaTextMuted,
-                            fontSize = 11.sp,
+                            fontSize = 10.sp,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                         )
                     }
                 }
             }
-        }
 
-        // Indicators bar
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // EMA toggle pill
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(if (showEma) PiaAccent else PiaBorder)
-                    .clickable { onToggleEma() }
-                    .padding(horizontal = 6.dp, vertical = 2.dp)
-            ) {
-                val label = if (showEma && emaValue != null) "EMA20: ${String.format("%.1f", emaValue)}" else "EMA 20"
-                Text(
-                    text = label,
-                    color = if (showEma) PiaText else PiaTextMuted,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Medium
-                )
-            }
+            // Indicator Toggles
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                // EMA 20
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(if (showEma) PiaAccent.copy(alpha = 0.2f) else PiaBorder.copy(alpha = 0.4f))
+                        .border(
+                            0.5.dp,
+                            if (showEma) PiaAccent else PiaBorder,
+                            RoundedCornerShape(4.dp)
+                        )
+                        .clickable { onToggleEma() }
+                        .padding(horizontal = 6.dp, vertical = 3.dp)
+                ) {
+                    val label = if (showEma && emaValue != null) "EMA: ${formatPrice(emaValue, symbol)}" else "EMA"
+                    Text(
+                        text = label,
+                        color = if (showEma) PiaAccent else PiaTextMuted,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
 
-            // RSI toggle pill
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(if (showRsi) PiaAccent else PiaBorder)
-                    .clickable { onToggleRsi() }
-                    .padding(horizontal = 6.dp, vertical = 2.dp)
-            ) {
-                val label = if (showRsi && rsiValue != null) "RSI14: ${String.format("%.1f", rsiValue)}" else "RSI 14"
-                Text(
-                    text = label,
-                    color = if (showRsi) PiaText else PiaTextMuted,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Medium
-                )
+                // RSI 14
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(if (showRsi) PiaAccent.copy(alpha = 0.2f) else PiaBorder.copy(alpha = 0.4f))
+                        .border(
+                            0.5.dp,
+                            if (showRsi) PiaAccent else PiaBorder,
+                            RoundedCornerShape(4.dp)
+                        )
+                        .clickable { onToggleRsi() }
+                        .padding(horizontal = 6.dp, vertical = 3.dp)
+                ) {
+                    val label = if (showRsi && rsiValue != null) "RSI: ${String.format("%.1f", rsiValue)}" else "RSI"
+                    Text(
+                        text = label,
+                        color = if (showRsi) PiaAccent else PiaTextMuted,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
         }
+    }
+}
+
+private fun formatPrice(price: Double, symbol: String): String {
+    return when {
+        symbol.startsWith("IDX:") -> String.format("%,.0f", price)
+        price >= 1000.0 -> String.format("%,.2f", price)
+        price >= 1.0 -> String.format("%.2f", price)
+        else -> String.format("%.4f", price)
     }
 }

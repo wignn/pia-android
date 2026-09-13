@@ -14,7 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.wign.pia.data.Candle
-import dev.wign.pia.ui.theme.PiaCard
+import dev.wign.pia.ui.theme.PiaBg
 import dev.wign.pia.ui.theme.PiaDown
 import dev.wign.pia.ui.theme.PiaText
 import dev.wign.pia.ui.theme.PiaTextMuted
@@ -38,47 +38,60 @@ fun CrosshairHud(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(PiaCard)
-            .padding(horizontal = 12.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+            .background(PiaBg)
+            .padding(horizontal = 12.dp, vertical = 3.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = timeFormatted,
             color = PiaTextMuted,
-            fontSize = 11.sp,
+            fontSize = 10.sp,
             fontFamily = FontFamily.Monospace
         )
         Text(
-            text = "O:${String.format("%.1f", candle.open)}",
+            text = "O:${formatVal(candle.open)}",
             color = PiaText,
-            fontSize = 11.sp,
+            fontSize = 10.sp,
             fontFamily = FontFamily.Monospace
         )
         Text(
-            text = "H:${String.format("%.1f", candle.high)}",
+            text = "H:${formatVal(candle.high)}",
             color = PiaUp,
-            fontSize = 11.sp,
+            fontSize = 10.sp,
             fontFamily = FontFamily.Monospace
         )
         Text(
-            text = "L:${String.format("%.1f", candle.low)}",
+            text = "L:${formatVal(candle.low)}",
             color = PiaDown,
-            fontSize = 11.sp,
+            fontSize = 10.sp,
             fontFamily = FontFamily.Monospace
         )
         Text(
-            text = "C:${String.format("%.1f", candle.close)}",
+            text = "C:${formatVal(candle.close)}",
             color = color,
-            fontSize = 11.sp,
+            fontSize = 10.sp,
             fontWeight = FontWeight.Bold,
             fontFamily = FontFamily.Monospace
         )
         Text(
-            text = "V:${String.format("%.0f", candle.volume)}",
+            text = "V:${formatVol(candle.volume)}",
             color = PiaTextMuted,
-            fontSize = 11.sp,
+            fontSize = 10.sp,
             fontFamily = FontFamily.Monospace
         )
+    }
+}
+
+private fun formatVal(v: Double): String {
+    return if (v >= 1000.0) String.format("%,.1f", v) else String.format("%.2f", v)
+}
+
+private fun formatVol(v: Double): String {
+    return when {
+        v >= 1_000_000 -> String.format("%.1fM", v / 1_000_000)
+        v >= 1_000 -> String.format("%.1fK", v / 1_000)
+        v > 0 -> String.format("%.0f", v)
+        else -> "--"
     }
 }
