@@ -19,7 +19,6 @@ import com.tradingview.lightweightcharts.api.options.models.LineSeriesOptions
 import com.tradingview.lightweightcharts.api.options.models.PriceScaleOptions
 import com.tradingview.lightweightcharts.api.options.models.TimeScaleOptions
 import com.tradingview.lightweightcharts.api.series.enums.LineWidth
-import com.tradingview.lightweightcharts.api.series.models.BarPrice
 import com.tradingview.lightweightcharts.api.series.models.CandlestickData
 import com.tradingview.lightweightcharts.api.series.models.LineData
 import com.tradingview.lightweightcharts.api.series.models.Time
@@ -92,7 +91,7 @@ fun PiaChartView(
             api.subscribeCrosshairMove { params ->
                 val time = params.time
                 if (time is Time.Utc) {
-                    onCrosshairMoved(time.value)
+                    onCrosshairMoved(time.timestamp)
                 } else {
                     onCrosshairMoved(null)
                 }
@@ -106,10 +105,10 @@ fun PiaChartView(
             val list = historicalCandles.map { c ->
                 CandlestickData(
                     time = Time.Utc(c.time),
-                    open = BarPrice(c.open.toFloat()),
-                    high = BarPrice(c.high.toFloat()),
-                    low = BarPrice(c.low.toFloat()),
-                    close = BarPrice(c.close.toFloat())
+                    open = c.open.toFloat(),
+                    high = c.high.toFloat(),
+                    low = c.low.toFloat(),
+                    close = c.close.toFloat()
                 )
             }
             candleSeriesApi?.setData(list)
@@ -123,7 +122,7 @@ fun PiaChartView(
                 val lineDataList = emaSeries.map { (timeSec, valDouble) ->
                     LineData(
                         time = Time.Utc(timeSec),
-                        value = BarPrice(valDouble.toFloat())
+                        value = valDouble.toFloat()
                     )
                 }
                 emaSeriesApi?.setData(lineDataList)
@@ -138,10 +137,10 @@ fun PiaChartView(
         if (latestCandle != null && candleSeriesApi != null) {
             val candleData = CandlestickData(
                 time = Time.Utc(latestCandle.time),
-                open = BarPrice(latestCandle.open.toFloat()),
-                high = BarPrice(latestCandle.high.toFloat()),
-                low = BarPrice(latestCandle.low.toFloat()),
-                close = BarPrice(latestCandle.close.toFloat())
+                open = latestCandle.open.toFloat(),
+                high = latestCandle.high.toFloat(),
+                low = latestCandle.low.toFloat(),
+                close = latestCandle.close.toFloat()
             )
             candleSeriesApi?.update(candleData)
 
@@ -149,7 +148,7 @@ fun PiaChartView(
                 emaSeriesApi?.update(
                     LineData(
                         time = Time.Utc(latestCandle.time),
-                        value = BarPrice(latestEma.toFloat())
+                        value = latestEma.toFloat()
                     )
                 )
             }
