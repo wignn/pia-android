@@ -10,14 +10,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
+import com.tradingview.lightweightcharts.api.chart.models.color.IntColor
+import com.tradingview.lightweightcharts.api.chart.models.color.surface.SolidColor
 import com.tradingview.lightweightcharts.api.interfaces.SeriesApi
 import com.tradingview.lightweightcharts.api.options.models.CandlestickSeriesOptions
-import com.tradingview.lightweightcharts.api.options.models.Color
 import com.tradingview.lightweightcharts.api.options.models.LayoutOptions
 import com.tradingview.lightweightcharts.api.options.models.LineSeriesOptions
-import com.tradingview.lightweightcharts.api.options.models.LineWidth
 import com.tradingview.lightweightcharts.api.options.models.PriceScaleOptions
 import com.tradingview.lightweightcharts.api.options.models.TimeScaleOptions
+import com.tradingview.lightweightcharts.api.series.enums.LineWidth
 import com.tradingview.lightweightcharts.api.series.models.BarPrice
 import com.tradingview.lightweightcharts.api.series.models.CandlestickData
 import com.tradingview.lightweightcharts.api.series.models.LineData
@@ -48,27 +49,27 @@ fun PiaChartView(
             )
             api.applyOptions {
                 layout = LayoutOptions(
-                    background = Color(0xFF131722.toInt()),
-                    textColor = Color(0xFFD1D4DC.toInt())
+                    background = SolidColor(IntColor(0xFF131722.toInt())),
+                    textColor = IntColor(0xFFD1D4DC.toInt())
                 )
                 timeScale = TimeScaleOptions(
-                    borderColor = Color(0xFF2A2E39.toInt()),
+                    borderColor = IntColor(0xFF2A2E39.toInt()),
                     timeVisible = true,
                     secondsVisible = false
                 )
                 rightPriceScale = PriceScaleOptions(
-                    borderColor = Color(0xFF2A2E39.toInt())
+                    borderColor = IntColor(0xFF2A2E39.toInt())
                 )
             }
 
             // Candlestick series
             api.addCandlestickSeries(
                 options = CandlestickSeriesOptions(
-                    upColor = Color(0xFF26A69A.toInt()),
-                    downColor = Color(0xFFEF5350.toInt()),
+                    upColor = IntColor(0xFF26A69A.toInt()),
+                    downColor = IntColor(0xFFEF5350.toInt()),
                     borderVisible = false,
-                    wickUpColor = Color(0xFF26A69A.toInt()),
-                    wickDownColor = Color(0xFFEF5350.toInt())
+                    wickUpColor = IntColor(0xFF26A69A.toInt()),
+                    wickDownColor = IntColor(0xFFEF5350.toInt())
                 ),
                 onSeriesCreated = { series ->
                     candleSeriesApi = series
@@ -78,7 +79,7 @@ fun PiaChartView(
             // EMA 20 overlay line series
             api.addLineSeries(
                 options = LineSeriesOptions(
-                    color = Color(0xFF2962FF.toInt()),
+                    color = IntColor(0xFF2962FF.toInt()),
                     lineWidth = LineWidth.TWO,
                     priceLineVisible = false
                 ),
