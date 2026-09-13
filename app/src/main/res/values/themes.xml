@@ -1,8 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#0E1118</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_logo</item>
+        <item name="postSplashScreenTheme">@style/Theme.PiaTerminal</item>
+    </style>
+
     <style name="Theme.PiaTerminal" parent="android:Theme.Material.NoActionBar">
-        <item name="android:statusBarColor">#131722</item>
+        <item name="android:statusBarColor">#0E1118</item>
         <item name="android:navigationBarColor">#1e222d</item>
-        <item name="android:windowBackground">#131722</item>
+        <item name="android:windowBackground">#0E1118</item>
     </style>
 </resources>
