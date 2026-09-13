@@ -67,6 +67,12 @@ class ChartViewModel(
     private val _recentTrades = MutableStateFlow<List<MarketTick>>(emptyList())
     val recentTrades: StateFlow<List<MarketTick>> = _recentTrades.asStateFlow()
 
+    private val _alerts = MutableStateFlow<List<dev.wign.pia.ui.components.PriceAlert>>(emptyList())
+    val alerts: StateFlow<List<dev.wign.pia.ui.components.PriceAlert>> = _alerts.asStateFlow()
+
+    private val _triggeredAlert = kotlinx.coroutines.flow.MutableSharedFlow<dev.wign.pia.ui.components.PriceAlert>()
+    val triggeredAlert = _triggeredAlert.asSharedFlow()
+
     private val _crosshairCandle = MutableStateFlow<Candle?>(null)
     val crosshairCandle: StateFlow<Candle?> = _crosshairCandle.asStateFlow()
 
@@ -111,6 +117,19 @@ class ChartViewModel(
                     tick.symbol.equals(_currentSymbol.value, ignoreCase = true)
                 ) {
                     _lastPrice.value = tick.price
+
+                    // Check and trigger price alerts
+                    _alerts.value.filter { !it.isTriggered && it.symbol == _currentSymbol.value }.forEach { alert ->
+                        val hit = if (alert.condition == "ABOVE") {
+                            tick.price >= alert.targetPrice
+                        } else {
+                            tick.price <= alert.targetPrice
+                        }
+                        if (hit) {
+                            alert.isTriggered = true
+                            viewModelScope.launch { _triggeredAlert.emit(alert) }
+                        }
+                    }
 
                     // Native NDK calculation for real-time EMA & RSI
                     val ema = NativeBridge.calculateEma(20, tick.price)
@@ -188,6 +207,15 @@ class ChartViewModel(
         val next = !_showVolume.value
         _showVolume.value = next
         viewModelScope.launch { prefs.saveShowVolume(next) }
+    }
+
+    fun addPriceAlert(targetPrice: Double, condition: String) {
+        val newAlert = dev.wign.pia.ui.components.PriceAlert(
+            symbol = _currentSymbol.value,
+            targetPrice = targetPrice,
+            condition = condition
+        )
+        _alerts.value = _alerts.value + newAlert
     }
 
     fun toggleTape() {

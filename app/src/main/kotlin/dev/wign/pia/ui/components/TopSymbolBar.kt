@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.NotificationsNone
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -57,6 +58,7 @@ fun TopSymbolBar(
     onToggleVolume: () -> Unit = {},
     showTape: Boolean = true,
     onToggleTape: () -> Unit = {},
+    onOpenAlertModal: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val timeframes = listOf("1m", "5m", "15m", "1h", "4h", "1D")
@@ -130,6 +132,15 @@ fun TopSymbolBar(
                     contentDescription = "Select Symbol",
                     tint = PiaTextMuted,
                     modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Icon(
+                    imageVector = Icons.Default.NotificationsNone,
+                    contentDescription = "Set Alert",
+                    tint = PiaTextMuted,
+                    modifier = Modifier
+                        .size(18.dp)
+                        .clickable { onOpenAlertModal() }
                 )
             }
 

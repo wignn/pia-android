@@ -1,7 +1,12 @@
 package dev.wign.pia
 
+import android.content.Context
 import android.content.res.Configuration
+import android.os.Build
 import android.os.Bundle
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -23,6 +28,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -43,6 +50,7 @@ import dev.wign.pia.ui.chart.ChartViewModel
 import dev.wign.pia.ui.chart.PiaChartView
 import dev.wign.pia.ui.components.BottomNavBar
 import dev.wign.pia.ui.components.CrosshairHud
+import dev.wign.pia.ui.components.PriceAlertDialog
 import dev.wign.pia.ui.components.RecentTradesTape
 import dev.wign.pia.ui.components.TopSymbolBar
 import dev.wign.pia.ui.components.WatchlistSheet
@@ -76,6 +84,7 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(viewModel: ChartViewModel) {
+    val context = LocalContext.current
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
@@ -99,10 +108,28 @@ fun MainScreen(viewModel: ChartViewModel) {
 
     var activeTab by remember { mutableStateOf("chart") }
     var isWatchlistModalOpen by remember { mutableStateOf(false) }
+    var isAlertModalOpen by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
 
     val displayHudCandle = crosshairCandle ?: latestCandle ?: historicalCandles.lastOrNull()
+
+    // Handle Price Alert Triggers with Haptic Vibration & Notification
+    LaunchedEffect(Unit) {
+        viewModel.triggeredAlert.collect { alert ->
+            val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                vibrator?.vibrate(VibrationEffect.createOneShot(350, VibrationEffect.DEFAULT_AMPLITUDE))
+            } else {
+                vibrator?.vibrate(350)
+            }
+            Toast.makeText(
+                context,
+                "🔔 ALERT TRIGGERED: ${alert.symbol} crossed ${String.format("%,.2f", alert.targetPrice)}!",
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -198,14 +225,14 @@ fun MainScreen(viewModel: ChartViewModel) {
                                         .background(if (showVolume) PiaAccent.copy(alpha = 0.3f) else PiaBorder.copy(alpha = 0.4f))
                                         .clickable { viewModel.toggleVolume() }
                                         .padding(horizontal = 8.dp, vertical = 4.dp)
-                                    ) {
-                                        Text(
-                                            text = "VOL",
-                                            color = if (showVolume) PiaAccent else PiaTextMuted,
-                                            fontSize = 10.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
+                                ) {
+                                    Text(
+                                        text = "VOL",
+                                        color = if (showVolume) PiaAccent else PiaTextMuted,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
                             }
                         }
                     }
@@ -232,13 +259,14 @@ fun MainScreen(viewModel: ChartViewModel) {
                             showVolume = showVolume,
                             onToggleVolume = { viewModel.toggleVolume() },
                             showTape = showTape,
-                            onToggleTape = { viewModel.toggleTape() }
+                            onToggleTape = { viewModel.toggleTape() },
+                            onOpenAlertModal = { isAlertModalOpen = true }
                         )
 
                         // Compact OHLCV crosshair HUD
                         CrosshairHud(candle = displayHudCandle)
 
-                        // Full-bleed Lightweight Charts View with Volume Histogram
+                        // Full-bleed Lightweight Charts View with Volume & S/R Lines
                         PiaChartView(
                             historicalCandles = historicalCandles,
                             latestCandle = latestCandle,
@@ -289,6 +317,18 @@ fun MainScreen(viewModel: ChartViewModel) {
                             isWatchlistModalOpen = false
                         }
                     }
+                )
+            }
+
+            if (isAlertModalOpen) {
+                PriceAlertDialog(
+                    symbol = symbol,
+                    currentPrice = lastPrice,
+                    onSetAlert = { target, condition ->
+                        viewModel.addPriceAlert(target, condition)
+                        Toast.makeText(context, "Alert set for $symbol at $target ($condition)", Toast.LENGTH_SHORT).show()
+                    },
+                    onDismiss = { isAlertModalOpen = false }
                 )
             }
         }

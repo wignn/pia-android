@@ -26,9 +26,11 @@ import com.tradingview.lightweightcharts.api.options.models.GridOptions
 import com.tradingview.lightweightcharts.api.options.models.HistogramSeriesOptions
 import com.tradingview.lightweightcharts.api.options.models.LayoutOptions
 import com.tradingview.lightweightcharts.api.options.models.LineSeriesOptions
+import com.tradingview.lightweightcharts.api.options.models.PriceLineOptions
 import com.tradingview.lightweightcharts.api.options.models.PriceScaleMargins
 import com.tradingview.lightweightcharts.api.options.models.PriceScaleOptions
 import com.tradingview.lightweightcharts.api.options.models.TimeScaleOptions
+import com.tradingview.lightweightcharts.api.series.common.PriceLine
 import com.tradingview.lightweightcharts.api.series.enums.CrosshairMode
 import com.tradingview.lightweightcharts.api.series.enums.LineStyle
 import com.tradingview.lightweightcharts.api.series.enums.LineWidth
@@ -51,6 +53,7 @@ fun PiaChartView(
     latestEma: Double?,
     showEma: Boolean,
     showVolume: Boolean = true,
+    showSrLines: Boolean = true,
     chartType: String = "candles",
     onCrosshairMoved: (Long?) -> Unit,
     modifier: Modifier = Modifier
@@ -59,6 +62,9 @@ fun PiaChartView(
     var mainSeriesApi by remember { mutableStateOf<SeriesApi?>(null) }
     var volumeSeriesApi by remember { mutableStateOf<SeriesApi?>(null) }
     var emaSeriesApi by remember { mutableStateOf<SeriesApi?>(null) }
+
+    var highPriceLine by remember { mutableStateOf<PriceLine?>(null) }
+    var lowPriceLine by remember { mutableStateOf<PriceLine?>(null) }
 
     val chartsView = remember(chartType) {
         ChartsView(context).apply {
@@ -96,7 +102,7 @@ fun PiaChartView(
                 )
             }
 
-            // Dedicated volume price scale pinned to bottom 20%
+            // Dedicated volume price scale pinned to bottom 18%
             api.priceScale(PriceScaleId("volume")).applyOptions {
                 scaleMargins = PriceScaleMargins(top = 0.82f, bottom = 0.0f)
             }
@@ -177,8 +183,8 @@ fun PiaChartView(
         }
     }
 
-    // Set initial / historical main dataset & volume
-    LaunchedEffect(historicalCandles, mainSeriesApi, volumeSeriesApi, chartType, showVolume) {
+    // Set initial / historical main dataset, volume, and Support/Resistance lines
+    LaunchedEffect(historicalCandles, mainSeriesApi, volumeSeriesApi, chartType, showVolume, showSrLines) {
         val api = mainSeriesApi
         val volApi = volumeSeriesApi
         if (historicalCandles.isNotEmpty()) {
@@ -224,6 +230,40 @@ fun PiaChartView(
                             )
                         }
                         api.setData(candleData)
+                    }
+                }
+
+                // 24h High & Low Support/Resistance price lines
+                if (showSrLines) {
+                    val maxHigh = distinctList.maxOfOrNull { it.high }?.toFloat()
+                    val minLow = distinctList.minOfOrNull { it.low }?.toFloat()
+
+                    // Clear old price lines if present
+                    highPriceLine?.let { api.removePriceLine(it) }
+                    lowPriceLine?.let { api.removePriceLine(it) }
+
+                    if (maxHigh != null) {
+                        highPriceLine = api.createPriceLine(
+                            PriceLineOptions(
+                                price = maxHigh,
+                                color = IntColor(0xFFEF5350.toInt()),
+                                lineWidth = LineWidth.ONE,
+                                lineStyle = LineStyle.DOTTED,
+                                title = "HIGH"
+                            )
+                        )
+                    }
+
+                    if (minLow != null) {
+                        lowPriceLine = api.createPriceLine(
+                            PriceLineOptions(
+                                price = minLow,
+                                color = IntColor(0xFF26A69A.toInt()),
+                                lineWidth = LineWidth.ONE,
+                                lineStyle = LineStyle.DOTTED,
+                                title = "LOW"
+                            )
+                        )
                     }
                 }
             }
