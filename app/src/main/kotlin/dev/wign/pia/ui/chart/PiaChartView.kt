@@ -6,7 +6,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
@@ -37,8 +40,8 @@ fun PiaChartView(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    var candleSeriesApi: SeriesApi? = remember { null }
-    var emaSeriesApi: SeriesApi? = remember { null }
+    var candleSeriesApi by remember { mutableStateOf<SeriesApi?>(null) }
+    var emaSeriesApi by remember { mutableStateOf<SeriesApi?>(null) }
 
     val chartsView = remember {
         ChartsView(context).apply {
@@ -100,24 +103,29 @@ fun PiaChartView(
     }
 
     // Set initial / historical candlestick data
-    LaunchedEffect(historicalCandles) {
-        if (historicalCandles.isNotEmpty() && candleSeriesApi != null) {
-            val list = historicalCandles.map { c ->
-                CandlestickData(
-                    time = Time.Utc(c.time),
-                    open = c.open.toFloat(),
-                    high = c.high.toFloat(),
-                    low = c.low.toFloat(),
-                    close = c.close.toFloat()
-                )
-            }
-            candleSeriesApi?.setData(list)
+    LaunchedEffect(historicalCandles, candleSeriesApi) {
+        val api = candleSeriesApi
+        if (historicalCandles.isNotEmpty() && api != null) {
+            val list = historicalCandles
+                .distinctBy { it.time }
+                .sortedBy { it.time }
+                .map { c ->
+                    CandlestickData(
+                        time = Time.Utc(c.time),
+                        open = c.open.toFloat(),
+                        high = c.high.toFloat(),
+                        low = c.low.toFloat(),
+                        close = c.close.toFloat()
+                    )
+                }
+            api.setData(list)
         }
     }
 
     // Set / update EMA line series
-    LaunchedEffect(emaSeries, showEma) {
-        if (emaSeriesApi != null) {
+    LaunchedEffect(emaSeries, showEma, emaSeriesApi) {
+        val api = emaSeriesApi
+        if (api != null) {
             if (showEma && emaSeries.isNotEmpty()) {
                 val lineDataList = emaSeries.map { (timeSec, valDouble) ->
                     LineData(
@@ -125,16 +133,17 @@ fun PiaChartView(
                         value = valDouble.toFloat()
                     )
                 }
-                emaSeriesApi?.setData(lineDataList)
+                api.setData(lineDataList)
             } else {
-                emaSeriesApi?.setData(emptyList())
+                api.setData(emptyList())
             }
         }
     }
 
     // Live tick / candle update
     LaunchedEffect(latestCandle) {
-        if (latestCandle != null && candleSeriesApi != null) {
+        val api = candleSeriesApi
+        if (latestCandle != null && api != null) {
             val candleData = CandlestickData(
                 time = Time.Utc(latestCandle.time),
                 open = latestCandle.open.toFloat(),
@@ -142,7 +151,7 @@ fun PiaChartView(
                 low = latestCandle.low.toFloat(),
                 close = latestCandle.close.toFloat()
             )
-            candleSeriesApi?.update(candleData)
+            api.update(candleData)
 
             if (showEma && latestEma != null && emaSeriesApi != null) {
                 emaSeriesApi?.update(

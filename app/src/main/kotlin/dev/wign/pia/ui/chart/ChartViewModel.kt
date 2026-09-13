@@ -56,7 +56,15 @@ class ChartViewModel(
 
         viewModelScope.launch {
             wsClient.ticks.collect { tick ->
-                if (tick.symbol == _currentSymbol.value) {
+                val cleanCurrent = if (_currentSymbol.value.contains(":")) {
+                    _currentSymbol.value.substringAfter(":")
+                } else {
+                    _currentSymbol.value
+                }
+
+                if (tick.symbol.equals(cleanCurrent, ignoreCase = true) ||
+                    tick.symbol.equals(_currentSymbol.value, ignoreCase = true)
+                ) {
                     _lastPrice.value = tick.price
 
                     // Native NDK calculation for real-time EMA & RSI
@@ -122,7 +130,8 @@ class ChartViewModel(
     }
 
     private fun loadSymbolData(symbol: String, timeframe: String) {
-        wsClient.subscribe(listOf("ticks:$symbol"))
+        val cleanSymbol = if (symbol.contains(":")) symbol.substringAfter(":") else symbol
+        wsClient.subscribe(listOf(cleanSymbol))
 
         viewModelScope.launch {
             val candles = apiClient.getHistory(symbol, timeframe, limit = 150)

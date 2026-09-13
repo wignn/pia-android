@@ -44,7 +44,9 @@ class PiaApiClient(
         resolution: String = "1m",
         limit: Int = 120
     ): List<Candle> = withContext(Dispatchers.IO) {
-        val url = "$baseUrl/api/v1/market/history/$symbol?resolution=$resolution&limit=$limit"
+        // Normalize symbol: strip exchange prefix (e.g. BINANCE:BTCUSDT -> BTCUSDT, IDX:BBCA -> BBCA)
+        val cleanSymbol = if (symbol.contains(":")) symbol.substringAfter(":") else symbol
+        val url = "$baseUrl/api/v1/market/history/$cleanSymbol?resolution=$resolution&limit=$limit"
         val request = Request.Builder()
             .url(url)
             .addHeader("x-api-key", apiKey)
@@ -56,17 +58,22 @@ class PiaApiClient(
                 if (!response.isSuccessful) return@withContext emptyList()
                 val bodyString = response.body?.string() ?: return@withContext emptyList()
                 val page = historyAdapter.fromJson(bodyString) ?: return@withContext emptyList()
-                page.items.map { item ->
-                    Candle(
-                        symbol = symbol,
-                        time = item.time,
-                        open = item.open,
-                        high = item.high,
-                        low = item.low,
-                        close = item.close,
-                        volume = item.volume
-                    )
-                }
+
+                // Sort strictly ascending by time and remove duplicates for TradingView compliance
+                page.items
+                    .map { item ->
+                        Candle(
+                            symbol = symbol,
+                            time = item.time,
+                            open = item.open,
+                            high = item.high,
+                            low = item.low,
+                            close = item.close,
+                            volume = item.volume
+                        )
+                    }
+                    .distinctBy { it.time }
+                    .sortedBy { it.time }
             }
         } catch (e: Exception) {
             emptyList()
