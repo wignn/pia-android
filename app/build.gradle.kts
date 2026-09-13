@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "dev.wign.pia"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "dev.wign.pia"
