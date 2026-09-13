@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="pia_bg">#131722</color>
+    <color name="pia_card">#1e222d</color>
+    <color name="pia_border">#2a2e39</color>
+    <color name="pia_accent">#2962ff</color>
+    <color name="pia_up">#26a69a</color>
+    <color name="pia_down">#ef5350</color>
+    <color name="pia_text">#d1d4dc</color>
+    <color name="pia_text_muted">#787b86</color>
+</resources>

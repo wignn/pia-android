@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.PiaTerminal" parent="android:Theme.Material.NoActionBar">
+        <item name="android:statusBarColor">#131722</item>
+        <item name="android:navigationBarColor">#1e222d</item>
+        <item name="android:windowBackground">#131722</item>
+    </style>
+</resources>
