@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.wign.pia.data.Candle
 import dev.wign.pia.data.NativeBridge
+import dev.wign.pia.data.PiaApiClient
 import dev.wign.pia.data.PiaWsClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -11,7 +12,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class ChartViewModel(
-    private val wsClient: PiaWsClient = PiaWsClient()
+    private val wsClient: PiaWsClient = PiaWsClient(),
+    private val apiClient: PiaApiClient = PiaApiClient()
 ) : ViewModel() {
 
     private val _currentSymbol = MutableStateFlow("BINANCE:BTCUSDT")
@@ -20,21 +22,46 @@ class ChartViewModel(
     private val _timeframe = MutableStateFlow("1m")
     val timeframe: StateFlow<String> = _timeframe.asStateFlow()
 
+    private val _historicalCandles = MutableStateFlow<List<Candle>>(emptyList())
+    val historicalCandles: StateFlow<List<Candle>> = _historicalCandles.asStateFlow()
+
     private val _latestCandle = MutableStateFlow<Candle?>(null)
     val latestCandle: StateFlow<Candle?> = _latestCandle.asStateFlow()
 
     private val _lastPrice = MutableStateFlow(0.0)
     val lastPrice: StateFlow<Double> = _lastPrice.asStateFlow()
 
+    private val _ema20 = MutableStateFlow<Double?>(null)
+    val ema20: StateFlow<Double?> = _ema20.asStateFlow()
+
+    private val _rsi14 = MutableStateFlow<Double?>(null)
+    val rsi14: StateFlow<Double?> = _rsi14.asStateFlow()
+
+    private val _showEma20 = MutableStateFlow(false)
+    val showEma20: StateFlow<Boolean> = _showEma20.asStateFlow()
+
+    private val _showRsi14 = MutableStateFlow(false)
+    val showRsi14: StateFlow<Boolean> = _showRsi14.asStateFlow()
+
     init {
         NativeBridge.initConflator(60)
         wsClient.connect()
-        subscribeSymbol(_currentSymbol.value)
+        loadSymbolData(_currentSymbol.value, _timeframe.value)
 
         viewModelScope.launch {
             wsClient.ticks.collect { tick ->
                 if (tick.symbol == _currentSymbol.value) {
                     _lastPrice.value = tick.price
+
+                    // Rust NDK calculations
+                    val ema = NativeBridge.calculateEma(20, tick.price)
+                    _ema20.value = ema
+
+                    val rsi = NativeBridge.calculateRsi(14, tick.price)
+                    if (rsi >= 0.0) {
+                        _rsi14.value = rsi
+                    }
+
                     val candle = NativeBridge.conflateTick(
                         symbol = tick.symbol,
                         price = tick.price,
@@ -49,7 +76,14 @@ class ChartViewModel(
         }
     }
 
+    fun selectSymbol(symbol: String) {
+        if (_currentSymbol.value == symbol) return
+        _currentSymbol.value = symbol
+        loadSymbolData(symbol, _timeframe.value)
+    }
+
     fun setTimeframe(tf: String) {
+        if (_timeframe.value == tf) return
         _timeframe.value = tf
         val sec = when (tf) {
             "1m" -> 60L
@@ -60,15 +94,27 @@ class ChartViewModel(
             else -> 60L
         }
         NativeBridge.initConflator(sec)
+        loadSymbolData(_currentSymbol.value, tf)
     }
 
-    fun selectSymbol(symbol: String) {
-        _currentSymbol.value = symbol
-        subscribeSymbol(symbol)
+    fun toggleEma() {
+        _showEma20.value = !_showEma20.value
     }
 
-    private fun subscribeSymbol(symbol: String) {
+    fun toggleRsi() {
+        _showRsi14.value = !_showRsi14.value
+    }
+
+    private fun loadSymbolData(symbol: String, timeframe: String) {
         wsClient.subscribe(listOf("ticks:$symbol"))
+
+        viewModelScope.launch {
+            val candles = apiClient.getHistory(symbol, timeframe, limit = 150)
+            if (candles.isNotEmpty()) {
+                _historicalCandles.value = candles
+                _lastPrice.value = candles.last().close
+            }
+        }
     }
 
     override fun onCleared() {

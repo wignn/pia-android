@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -13,7 +12,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import com.tradingview.lightweightcharts.api.interfaces.SeriesApi
 import com.tradingview.lightweightcharts.api.options.models.CandlestickSeriesOptions
-import com.tradingview.lightweightcharts.api.options.models.ChartOptions
 import com.tradingview.lightweightcharts.api.options.models.Color
 import com.tradingview.lightweightcharts.api.options.models.LayoutOptions
 import com.tradingview.lightweightcharts.api.options.models.PriceScaleOptions
@@ -27,6 +25,7 @@ import dev.wign.pia.ui.theme.PiaBg
 
 @Composable
 fun PiaChartView(
+    historicalCandles: List<Candle>,
     latestCandle: Candle?,
     modifier: Modifier = Modifier
 ) {
@@ -68,6 +67,23 @@ fun PiaChartView(
         }
     }
 
+    // Set initial / historical data
+    LaunchedEffect(historicalCandles) {
+        if (historicalCandles.isNotEmpty() && seriesApi != null) {
+            val list = historicalCandles.map { c ->
+                CandlestickData(
+                    time = Time.Utc(c.time),
+                    open = BarPrice(c.open.toFloat()),
+                    high = BarPrice(c.high.toFloat()),
+                    low = BarPrice(c.low.toFloat()),
+                    close = BarPrice(c.close.toFloat())
+                )
+            }
+            seriesApi?.setData(list)
+        }
+    }
+
+    // Live tick / candle update
     LaunchedEffect(latestCandle) {
         if (latestCandle != null && seriesApi != null) {
             val candleData = CandlestickData(
