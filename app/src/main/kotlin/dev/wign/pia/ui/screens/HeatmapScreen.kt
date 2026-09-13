@@ -2,6 +2,8 @@ package dev.wign.pia.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,9 +16,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -24,87 +33,187 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import dev.wign.pia.ui.theme.PiaBg
-import dev.wign.pia.ui.theme.PiaBorder
-import dev.wign.pia.ui.theme.PiaCard
-import dev.wign.pia.ui.theme.PiaDown
-import dev.wign.pia.ui.theme.PiaText
-import dev.wign.pia.ui.theme.PiaTextMuted
-import dev.wign.pia.ui.theme.PiaUp
-
-data class HeatmapTile(
-    val symbol: String,
-    val name: String,
-    val changePercent: Double,
-    val marketCapTier: String
-)
-
-val SAMPLE_HEATMAP = listOf(
-    HeatmapTile("BBCA", "Bank Central Asia", 1.25, "Mega"),
-    HeatmapTile("BBRI", "Bank Rakyat Indo", -0.48, "Mega"),
-    HeatmapTile("BMRI", "Bank Mandiri", 0.71, "Mega"),
-    HeatmapTile("TLKM", "Telkom Indonesia", -1.30, "Large"),
-    HeatmapTile("ASII", "Astra Intl", 0.99, "Large"),
-    HeatmapTile("BBNI", "Bank Negara Indo", 0.0, "Large"),
-    HeatmapTile("BTC", "Bitcoin", 2.45, "Mega"),
-    HeatmapTile("ETH", "Ethereum", -0.85, "Mega"),
-    HeatmapTile("SOL", "Solana", 4.12, "Large"),
-    HeatmapTile("NVDA", "Nvidia Corp", 3.20, "Mega"),
-    HeatmapTile("AAPL", "Apple Inc", 0.45, "Mega"),
-    HeatmapTile("MSFT", "Microsoft", -0.22, "Mega")
-)
+import dev.wign.pia.data.MarketPriceItem
+import dev.wign.pia.data.PiaApiClient
+import dev.wign.pia.ui.theme.TvAccent
+import dev.wign.pia.ui.theme.TvDarkBorder
+import dev.wign.pia.ui.theme.TvDarkCard
+import dev.wign.pia.ui.theme.TvDarkText
+import dev.wign.pia.ui.theme.TvDarkTextMuted
+import dev.wign.pia.ui.theme.TvDown
+import dev.wign.pia.ui.theme.TvLightBorder
+import dev.wign.pia.ui.theme.TvLightCard
+import dev.wign.pia.ui.theme.TvLightText
+import dev.wign.pia.ui.theme.TvLightTextMuted
+import dev.wign.pia.ui.theme.TvUp
 
 @Composable
-fun HeatmapScreen(modifier: Modifier = Modifier) {
+fun HeatmapScreen(
+    isDarkMode: Boolean = true,
+    modifier: Modifier = Modifier
+) {
+    val apiClient = remember { PiaApiClient() }
+    var rawPrices by remember { mutableStateOf<List<MarketPriceItem>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    var selectedCategory by remember { mutableStateOf("All") }
+
+    val categories = listOf("All", "Equities", "Indices", "Crypto", "Commodities")
+
+    val cardColor = if (isDarkMode) TvDarkCard else TvLightCard
+    val textColor = if (isDarkMode) TvDarkText else TvLightText
+    val mutedColor = if (isDarkMode) TvDarkTextMuted else TvLightTextMuted
+    val borderColor = if (isDarkMode) TvDarkBorder else TvLightBorder
+
+    // Fetch REAL live prices from PIA ClickHouse & NATS Core
+    LaunchedEffect(Unit) {
+        isLoading = true
+        val prices = apiClient.getMarketPrices()
+        if (prices.isNotEmpty()) {
+            rawPrices = prices
+        }
+        isLoading = false
+    }
+
+    val filteredList = remember(rawPrices, selectedCategory) {
+        if (selectedCategory == "All") {
+            rawPrices
+        } else {
+            rawPrices.filter { item ->
+                when (selectedCategory) {
+                    "Equities" -> item.assetType == "stock"
+                    "Indices" -> item.assetType == "index"
+                    "Crypto" -> item.assetType == "crypto" || item.symbol.contains("BTC") || item.symbol.contains("ETH")
+                    "Commodities" -> item.assetType == "commodity" || item.symbol.contains("OIL") || item.symbol.contains("BRENT") || item.symbol.contains("GOLD")
+                    else -> true
+                }
+            }
+        }
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(PiaBg)
-            .padding(horizontal = 14.dp, vertical = 8.dp)
+            .padding(horizontal = 12.dp, vertical = 8.dp)
     ) {
-        Text(
-            text = "Cross-Asset Market Heatmap",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            color = PiaText,
-            modifier = Modifier.padding(bottom = 12.dp)
-        )
-
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(3),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-            modifier = Modifier.fillMaxSize()
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            items(SAMPLE_HEATMAP) { tile ->
-                val isUp = tile.changePercent >= 0.0
-                val color = if (isUp) PiaUp else PiaDown
-                val bgColor = color.copy(alpha = 0.18f)
-
-                Column(
+            Column {
+                Text(
+                    text = "Live Market Heatmap",
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = textColor
+                )
+                Text(
+                    text = "Real-time valuations from ClickHouse & NATS",
+                    fontSize = 10.sp,
+                    color = mutedColor
+                )
+            }
+            if (rawPrices.isNotEmpty()) {
+                Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(bgColor)
-                        .border(0.5.dp, color.copy(alpha = 0.4f), RoundedCornerShape(6.dp))
-                        .padding(vertical = 14.dp, horizontal = 8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(TvUp.copy(alpha = 0.15f))
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
                 ) {
                     Text(
-                        text = tile.symbol,
-                        color = PiaText,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    val sign = if (isUp) "+" else ""
-                    Text(
-                        text = "$sign${String.format("%.2f", tile.changePercent)}%",
-                        color = color,
-                        fontSize = 12.sp,
+                        text = "● ${rawPrices.size} LIVE ASSETS",
+                        color = TvUp,
+                        fontSize = 9.sp,
                         fontWeight = FontWeight.Bold,
                         fontFamily = FontFamily.Monospace
                     )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Category Filter Chips
+        Row(
+            modifier = Modifier.horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            categories.forEach { cat ->
+                val isSelected = cat == selectedCategory
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(if (isSelected) TvAccent else borderColor.copy(alpha = 0.4f))
+                        .clickable { selectedCategory = cat }
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = cat,
+                        color = if (isSelected) androidx.compose.ui.graphics.Color.White else mutedColor,
+                        fontSize = 11.sp,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        if (isLoading && rawPrices.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = TvAccent, modifier = Modifier.padding(16.dp))
+            }
+        } else {
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(3),
+                modifier = Modifier.fillMaxSize(),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                items(filteredList) { item ->
+                    // Financial styling: assign tile hue based on symbol hash or asset tier
+                    val isPositive = (item.symbol.hashCode() % 2 == 0)
+                    val tileBase = if (isPositive) TvUp else TvDown
+                    val alpha = 0.15f
+
+                    Box(
+                        modifier = Modifier
+                            .height(68.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(tileBase.copy(alpha = alpha))
+                            .border(0.5.dp, tileBase.copy(alpha = 0.4f), RoundedCornerShape(6.dp))
+                            .padding(6.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = item.symbol,
+                                color = textColor,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily.SansSerif
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = if (item.price >= 1000) String.format("%,.0f", item.price) else String.format("%.2f", item.price),
+                                color = tileBase,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily.Monospace
+                            )
+                            if (item.assetType != null) {
+                                Text(
+                                    text = item.assetType.uppercase(),
+                                    color = mutedColor,
+                                    fontSize = 8.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }

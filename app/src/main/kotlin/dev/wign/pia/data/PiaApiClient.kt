@@ -45,6 +45,20 @@ data class SocialPostItem(
     @Json(name = "retweet_count") val retweetCount: Long = 0
 )
 
+@JsonClass(generateAdapter = true)
+data class MarketPricesResponse(
+    @Json(name = "items") val items: List<MarketPriceItem> = emptyList()
+)
+
+@JsonClass(generateAdapter = true)
+data class MarketPriceItem(
+    @Json(name = "symbol") val symbol: String = "",
+    @Json(name = "price") val price: Double = 0.0,
+    @Json(name = "asset_type") val assetType: String? = null,
+    @Json(name = "volume") val volume: Double? = 0.0,
+    @Json(name = "received_at") val receivedAt: String? = null
+)
+
 class PiaApiClient(
     private val baseUrl: String = "https://api-engine.wign.dev",
     private val apiKey: String = "silvia"
@@ -57,6 +71,7 @@ class PiaApiClient(
     private val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
     private val historyAdapter = moshi.adapter(HistoryPage::class.java)
     private val socialAdapter = moshi.adapter(SocialPostsResponse::class.java)
+    private val marketPricesAdapter = moshi.adapter(MarketPricesResponse::class.java)
 
     suspend fun getHistory(
         symbol: String,
@@ -113,6 +128,27 @@ class PiaApiClient(
                 val bodyString = response.body?.string() ?: return@withContext emptyList()
                 val page = socialAdapter.fromJson(bodyString) ?: return@withContext emptyList()
                 page.items
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    suspend fun getMarketPrices(): List<MarketPriceItem> = withContext(Dispatchers.IO) {
+        val url = "$baseUrl/api/v1/market/prices?api_key=$apiKey"
+        val request = Request.Builder()
+            .url(url)
+            .addHeader("Authorization", "Bearer $apiKey")
+            .addHeader("x-api-key", apiKey)
+            .get()
+            .build()
+
+        try {
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) return@withContext emptyList()
+                val bodyString = response.body?.string() ?: return@withContext emptyList()
+                val resp = marketPricesAdapter.fromJson(bodyString) ?: return@withContext emptyList()
+                resp.items
             }
         } catch (e: Exception) {
             emptyList()

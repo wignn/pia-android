@@ -21,26 +21,38 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import dev.wign.pia.ui.theme.PiaAccent
-import dev.wign.pia.ui.theme.PiaBg
-import dev.wign.pia.ui.theme.PiaBorder
-import dev.wign.pia.ui.theme.PiaText
-import dev.wign.pia.ui.theme.PiaTextMuted
+import dev.wign.pia.ui.theme.TvAccent
+import dev.wign.pia.ui.theme.TvDarkBg
+import dev.wign.pia.ui.theme.TvDarkBorder
+import dev.wign.pia.ui.theme.TvDarkText
+import dev.wign.pia.ui.theme.TvDarkTextMuted
+import dev.wign.pia.ui.theme.TvLightBg
+import dev.wign.pia.ui.theme.TvLightBorder
+import dev.wign.pia.ui.theme.TvLightText
+import dev.wign.pia.ui.theme.TvLightTextMuted
 
 @Composable
-fun MarketsScreen(modifier: Modifier = Modifier) {
+fun MarketsScreen(
+    isDarkMode: Boolean = true,
+    modifier: Modifier = Modifier
+) {
     var selectedSection by remember { mutableStateOf("heatmap") } // "heatmap", "intel", "calendar"
+
+    val bg = if (isDarkMode) TvDarkBg else TvLightBg
+    val textPrimary = if (isDarkMode) TvDarkText else TvLightText
+    val textMuted = if (isDarkMode) TvDarkTextMuted else TvLightTextMuted
+    val borderColor = if (isDarkMode) TvDarkBorder else TvLightBorder
 
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(PiaBg)
+            .background(bg)
     ) {
         // Section Segmented Selector
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 8.dp),
+                .padding(horizontal = 12.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             val sections = listOf(
@@ -55,15 +67,15 @@ fun MarketsScreen(modifier: Modifier = Modifier) {
                     modifier = Modifier
                         .weight(1f)
                         .clip(RoundedCornerShape(6.dp))
-                        .background(if (isSelected) PiaAccent else PiaBorder.copy(alpha = 0.4f))
+                        .background(if (isSelected) TvAccent else borderColor.copy(alpha = 0.4f))
                         .clickable { selectedSection = id }
-                        .padding(vertical = 8.dp),
+                        .padding(vertical = 7.dp),
                     contentAlignment = androidx.compose.ui.Alignment.Center
                 ) {
                     Text(
                         text = label,
-                        color = if (isSelected) PiaText else PiaTextMuted,
-                        fontSize = 12.sp,
+                        color = if (isSelected) androidx.compose.ui.graphics.Color.White else textMuted,
+                        fontSize = 11.sp,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                     )
                 }
@@ -72,7 +84,7 @@ fun MarketsScreen(modifier: Modifier = Modifier) {
 
         // Section Content
         when (selectedSection) {
-            "heatmap" -> HeatmapScreen()
+            "heatmap" -> HeatmapScreen(isDarkMode = isDarkMode)
             "intel" -> IntelScreen()
             "calendar" -> CalendarScreen()
         }

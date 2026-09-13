@@ -111,6 +111,9 @@ fun PiaChartView(
                 )
                 timeScale = TimeScaleOptions(
                     borderColor = IntColor(chartBorderColor),
+                    barSpacing = 7.5f,
+                    minBarSpacing = 2.0f,
+                    rightOffset = 6.0f,
                     timeVisible = true,
                     secondsVisible = false
                 )
@@ -303,8 +306,9 @@ fun PiaChartView(
                 }
             }
 
-            // Auto fit and center the newly loaded symbol data
-            chartsView.api.timeScale.fitContent()
+            // Focus on latest ~45-50 candles with comfortable bar spacing (TradingView Mobile default)
+            chartsView.api.timeScale.resetTimeScale()
+            chartsView.api.timeScale.scrollToRealTime()
         } else {
             // Immediately clear previous symbol's series and S/R lines
             mainSeriesApi?.setData(emptyList())
