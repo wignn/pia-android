@@ -21,6 +21,7 @@ class PreferencesManager(private val context: Context) {
         val KEY_SHOW_RSI = booleanPreferencesKey("show_rsi")
         val KEY_SHOW_VOLUME = booleanPreferencesKey("show_volume")
         val KEY_SHOW_TAPE = booleanPreferencesKey("show_tape")
+        val KEY_DARK_MODE = booleanPreferencesKey("is_dark_mode")
         val KEY_FAVORITES = stringSetPreferencesKey("favorite_symbols")
     }
 
@@ -50,6 +51,10 @@ class PreferencesManager(private val context: Context) {
 
     val showTape: Flow<Boolean> = context.dataStore.data.map { prefs ->
         prefs[KEY_SHOW_TAPE] ?: true
+    }
+
+    val isDarkMode: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_DARK_MODE] ?: true
     }
 
     val favorites: Flow<Set<String>> = context.dataStore.data.map { prefs ->
@@ -95,6 +100,12 @@ class PreferencesManager(private val context: Context) {
     suspend fun saveShowTape(show: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[KEY_SHOW_TAPE] = show
+        }
+    }
+
+    suspend fun saveDarkMode(isDark: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_DARK_MODE] = isDark
         }
     }
 

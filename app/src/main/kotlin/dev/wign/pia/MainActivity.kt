@@ -2,7 +2,6 @@ package dev.wign.pia
 
 import android.content.Context
 import android.content.res.Configuration
-import android.os.Build
 import android.os.Bundle
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -50,6 +49,7 @@ import dev.wign.pia.ui.chart.ChartViewModel
 import dev.wign.pia.ui.chart.PiaChartView
 import dev.wign.pia.ui.components.BottomNavBar
 import dev.wign.pia.ui.components.CrosshairHud
+import dev.wign.pia.ui.components.IndicatorsModalSheet
 import dev.wign.pia.ui.components.PriceAlertDialog
 import dev.wign.pia.ui.components.RecentTradesTape
 import dev.wign.pia.ui.components.TopSymbolBar
@@ -58,14 +58,15 @@ import dev.wign.pia.ui.screens.MarketsScreen
 import dev.wign.pia.ui.screens.NewsScreen
 import dev.wign.pia.ui.screens.SettingsScreen
 import dev.wign.pia.ui.screens.WatchlistScreen
-import dev.wign.pia.ui.theme.PiaAccent
-import dev.wign.pia.ui.theme.PiaBg
-import dev.wign.pia.ui.theme.PiaBorder
-import dev.wign.pia.ui.theme.PiaCard
 import dev.wign.pia.ui.theme.PiaTerminalTheme
-import dev.wign.pia.ui.theme.PiaText
-import dev.wign.pia.ui.theme.PiaTextMuted
-import dev.wign.pia.ui.theme.PiaUp
+import dev.wign.pia.ui.theme.TvAccent
+import dev.wign.pia.ui.theme.TvDarkBg
+import dev.wign.pia.ui.theme.TvDarkBorder
+import dev.wign.pia.ui.theme.TvDarkCard
+import dev.wign.pia.ui.theme.TvDarkText
+import dev.wign.pia.ui.theme.TvDarkTextMuted
+import dev.wign.pia.ui.theme.TvLightBg
+import dev.wign.pia.ui.theme.TvUp
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -73,9 +74,10 @@ class MainActivity : ComponentActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         setContent {
-            PiaTerminalTheme {
-                val chartViewModel: ChartViewModel = viewModel()
-                MainScreen(chartViewModel)
+            val chartViewModel: ChartViewModel = viewModel()
+            val isDarkMode by chartViewModel.isDarkMode.collectAsState()
+            PiaTerminalTheme(isDarkMode = isDarkMode) {
+                MainScreen(chartViewModel, isDarkMode)
             }
         }
     }
@@ -83,7 +85,10 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(viewModel: ChartViewModel) {
+fun MainScreen(
+    viewModel: ChartViewModel,
+    isDarkMode: Boolean
+) {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -103,13 +108,17 @@ fun MainScreen(viewModel: ChartViewModel) {
     val rsiValue by viewModel.rsi14.collectAsState()
     val showVolume by viewModel.showVolume.collectAsState()
     val showTape by viewModel.showTape.collectAsState()
+    val showSrLines by viewModel.showSrLines.collectAsState()
     val recentTrades by viewModel.recentTrades.collectAsState()
     val crosshairCandle by viewModel.crosshairCandle.collectAsState()
 
     var activeTab by remember { mutableStateOf("chart") }
     var isWatchlistModalOpen by remember { mutableStateOf(false) }
     var isAlertModalOpen by remember { mutableStateOf(false) }
+    var isIndicatorsModalOpen by remember { mutableStateOf(false) }
+
     val sheetState = rememberModalBottomSheetState()
+    val indicatorsSheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
 
     val displayHudCandle = crosshairCandle ?: latestCandle ?: historicalCandles.lastOrNull()
@@ -127,6 +136,8 @@ fun MainScreen(viewModel: ChartViewModel) {
         }
     }
 
+    val canvasBg = if (isDarkMode) TvDarkBg else TvLightBg
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
@@ -143,7 +154,7 @@ fun MainScreen(viewModel: ChartViewModel) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(PiaBg)
+                .background(canvasBg)
                 .padding(if (isLandscape) androidx.compose.foundation.layout.PaddingValues(0.dp) else innerPadding)
         ) {
             when {
@@ -157,6 +168,8 @@ fun MainScreen(viewModel: ChartViewModel) {
                             latestEma = emaValue,
                             showEma = showEma,
                             showVolume = showVolume,
+                            showSrLines = showSrLines,
+                            isDarkMode = isDarkMode,
                             chartType = chartType,
                             onCrosshairMoved = { timeSec ->
                                 viewModel.setCrosshairTimestamp(timeSec)
@@ -170,7 +183,7 @@ fun MainScreen(viewModel: ChartViewModel) {
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp, vertical = 8.dp)
                                 .clip(RoundedCornerShape(8.dp))
-                                .background(PiaCard.copy(alpha = 0.85f))
+                                .background(TvDarkCard.copy(alpha = 0.85f))
                                 .padding(horizontal = 12.dp, vertical = 6.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
@@ -178,14 +191,14 @@ fun MainScreen(viewModel: ChartViewModel) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
                                     text = symbol,
-                                    color = PiaText,
+                                    color = TvDarkText,
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     text = if (lastPrice > 0) String.format("%,.2f", lastPrice) else "--",
-                                    color = PiaUp,
+                                    color = TvUp,
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Bold,
                                     fontFamily = FontFamily.Monospace
@@ -202,13 +215,13 @@ fun MainScreen(viewModel: ChartViewModel) {
                                     Box(
                                         modifier = Modifier
                                             .clip(RoundedCornerShape(4.dp))
-                                            .background(if (isSelected) PiaAccent else PiaBorder.copy(alpha = 0.5f))
+                                            .background(if (isSelected) TvAccent else TvDarkBorder.copy(alpha = 0.5f))
                                             .clickable { viewModel.setTimeframe(tf) }
                                             .padding(horizontal = 8.dp, vertical = 4.dp)
                                     ) {
                                         Text(
                                             text = tf,
-                                            color = if (isSelected) PiaText else PiaTextMuted,
+                                            color = if (isSelected) androidx.compose.ui.graphics.Color.White else TvDarkTextMuted,
                                             fontSize = 10.sp,
                                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                                         )
@@ -218,13 +231,13 @@ fun MainScreen(viewModel: ChartViewModel) {
                                 Box(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(4.dp))
-                                        .background(if (showVolume) PiaAccent.copy(alpha = 0.3f) else PiaBorder.copy(alpha = 0.4f))
+                                        .background(if (showVolume) TvAccent.copy(alpha = 0.3f) else TvDarkBorder.copy(alpha = 0.4f))
                                         .clickable { viewModel.toggleVolume() }
                                         .padding(horizontal = 8.dp, vertical = 4.dp)
                                 ) {
                                     Text(
                                         text = "VOL",
-                                        color = if (showVolume) PiaAccent else PiaTextMuted,
+                                        color = if (showVolume) TvAccent else TvDarkTextMuted,
                                         fontSize = 10.sp,
                                         fontWeight = FontWeight.Bold
                                     )
@@ -243,20 +256,13 @@ fun MainScreen(viewModel: ChartViewModel) {
                             currentTimeframe = timeframe,
                             chartType = chartType,
                             isConnected = isConnected,
+                            isDarkMode = isDarkMode,
                             onTimeframeSelected = { viewModel.setTimeframe(it) },
                             onCycleChartType = { viewModel.cycleChartType() },
                             onOpenWatchlist = { isWatchlistModalOpen = true },
-                            showEma = showEma,
-                            emaValue = emaValue,
-                            onToggleEma = { viewModel.toggleEma() },
-                            showRsi = showRsi,
-                            rsiValue = rsiValue,
-                            onToggleRsi = { viewModel.toggleRsi() },
-                            showVolume = showVolume,
-                            onToggleVolume = { viewModel.toggleVolume() },
-                            showTape = showTape,
-                            onToggleTape = { viewModel.toggleTape() },
-                            onOpenAlertModal = { isAlertModalOpen = true }
+                            onOpenIndicators = { isIndicatorsModalOpen = true },
+                            onOpenAlertModal = { isAlertModalOpen = true },
+                            onToggleTheme = { viewModel.toggleTheme() }
                         )
 
                         // Compact OHLCV crosshair HUD
@@ -270,6 +276,8 @@ fun MainScreen(viewModel: ChartViewModel) {
                             latestEma = emaValue,
                             showEma = showEma,
                             showVolume = showVolume,
+                            showSrLines = showSrLines,
+                            isDarkMode = isDarkMode,
                             chartType = chartType,
                             onCrosshairMoved = { timeSec ->
                                 viewModel.setCrosshairTimestamp(timeSec)
@@ -325,6 +333,28 @@ fun MainScreen(viewModel: ChartViewModel) {
                         Toast.makeText(context, "Alert set for $symbol at $target ($condition)", Toast.LENGTH_SHORT).show()
                     },
                     onDismiss = { isAlertModalOpen = false }
+                )
+            }
+
+            if (isIndicatorsModalOpen) {
+                IndicatorsModalSheet(
+                    sheetState = indicatorsSheetState,
+                    isDarkMode = isDarkMode,
+                    showEma = showEma,
+                    onToggleEma = { viewModel.toggleEma() },
+                    showRsi = showRsi,
+                    onToggleRsi = { viewModel.toggleRsi() },
+                    showVolume = showVolume,
+                    onToggleVolume = { viewModel.toggleVolume() },
+                    showTape = showTape,
+                    onToggleTape = { viewModel.toggleTape() },
+                    showSrLines = showSrLines,
+                    onToggleSrLines = { viewModel.toggleSrLines() },
+                    onDismiss = {
+                        scope.launch { indicatorsSheetState.hide() }.invokeOnCompletion {
+                            isIndicatorsModalOpen = false
+                        }
+                    }
                 )
             }
         }

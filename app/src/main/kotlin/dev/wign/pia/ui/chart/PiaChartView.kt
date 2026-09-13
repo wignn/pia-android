@@ -4,14 +4,21 @@ import android.view.ViewGroup
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.tradingview.lightweightcharts.api.chart.models.color.IntColor
 import com.tradingview.lightweightcharts.api.chart.models.color.surface.SolidColor
@@ -39,11 +46,12 @@ import com.tradingview.lightweightcharts.api.series.models.BarData
 import com.tradingview.lightweightcharts.api.series.models.CandlestickData
 import com.tradingview.lightweightcharts.api.series.models.HistogramData
 import com.tradingview.lightweightcharts.api.series.models.LineData
-import com.tradingview.lightweightcharts.api.series.models.PriceScaleId
 import com.tradingview.lightweightcharts.api.series.models.Time
 import com.tradingview.lightweightcharts.view.ChartsView
 import dev.wign.pia.data.Candle
-import dev.wign.pia.ui.theme.PiaBg
+import dev.wign.pia.ui.theme.TvAccent
+import dev.wign.pia.ui.theme.TvDarkBg
+import dev.wign.pia.ui.theme.TvLightBg
 
 @Composable
 fun PiaChartView(
@@ -54,6 +62,7 @@ fun PiaChartView(
     showEma: Boolean,
     showVolume: Boolean = true,
     showSrLines: Boolean = true,
+    isDarkMode: Boolean = true,
     chartType: String = "candles",
     onCrosshairMoved: (Long?) -> Unit,
     modifier: Modifier = Modifier
@@ -66,7 +75,15 @@ fun PiaChartView(
     var highPriceLine by remember { mutableStateOf<PriceLine?>(null) }
     var lowPriceLine by remember { mutableStateOf<PriceLine?>(null) }
 
-    val chartsView = remember(chartType) {
+    // Theme specific colors
+    val chartBgColor = if (isDarkMode) 0xFF0E1118.toInt() else 0xFFFFFFFF.toInt()
+    val chartTextColor = if (isDarkMode) 0xFF9EA2AE.toInt() else 0xFF131722.toInt()
+    val chartBorderColor = if (isDarkMode) 0xFF1E222D.toInt() else 0xFFE0E3EB.toInt()
+    val upCandleColor = if (isDarkMode) 0xFF26A69A.toInt() else 0xFF089981.toInt()
+    val downCandleColor = if (isDarkMode) 0xFFEF5350.toInt() else 0xFFF23645.toInt()
+    val crosshairColor = if (isDarkMode) 0x33787B86.toInt() else 0x33131722.toInt()
+
+    val chartsView = remember(chartType, isDarkMode) {
         ChartsView(context).apply {
             layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -74,8 +91,8 @@ fun PiaChartView(
             )
             api.applyOptions {
                 layout = LayoutOptions(
-                    background = SolidColor(IntColor(0xFF0E1118.toInt())),
-                    textColor = IntColor(0xFF9EA2AE.toInt())
+                    background = SolidColor(IntColor(chartBgColor)),
+                    textColor = IntColor(chartTextColor)
                 )
                 grid = GridOptions(
                     vertLines = GridLineOptions(visible = false),
@@ -84,25 +101,25 @@ fun PiaChartView(
                 crosshair = CrosshairOptions(
                     mode = CrosshairMode.NORMAL,
                     vertLine = CrosshairLineOptions(
-                        color = IntColor(0x33787B86.toInt()),
+                        color = IntColor(crosshairColor),
                         style = LineStyle.DASHED
                     ),
                     horzLine = CrosshairLineOptions(
-                        color = IntColor(0x33787B86.toInt()),
+                        color = IntColor(crosshairColor),
                         style = LineStyle.DASHED
                     )
                 )
                 timeScale = TimeScaleOptions(
-                    borderColor = IntColor(0xFF1E222D.toInt()),
+                    borderColor = IntColor(chartBorderColor),
                     timeVisible = true,
                     secondsVisible = false
                 )
                 rightPriceScale = PriceScaleOptions(
-                    borderColor = IntColor(0xFF1E222D.toInt())
+                    borderColor = IntColor(chartBorderColor)
                 )
             }
 
-            // Volume Histogram Series with isolated priceScale margins
+            // Volume Histogram Series with safe isolated priceScale margins
             api.addHistogramSeries(
                 options = HistogramSeriesOptions(
                     priceLineVisible = false
@@ -122,7 +139,7 @@ fun PiaChartView(
                 "line" -> {
                     api.addLineSeries(
                         options = LineSeriesOptions(
-                            color = IntColor(0xFF26A69A.toInt()),
+                            color = IntColor(upCandleColor),
                             lineWidth = LineWidth.TWO
                         ),
                         onSeriesCreated = { series -> mainSeriesApi = series }
@@ -131,9 +148,9 @@ fun PiaChartView(
                 "area" -> {
                     api.addAreaSeries(
                         options = AreaSeriesOptions(
-                            topColor = IntColor(0x3326A69A.toInt()),
-                            bottomColor = IntColor(0x0026A69A.toInt()),
-                            lineColor = IntColor(0xFF26A69A.toInt()),
+                            topColor = IntColor(if (isDarkMode) 0x3326A69A.toInt() else 0x33089981.toInt()),
+                            bottomColor = IntColor(0x00000000),
+                            lineColor = IntColor(upCandleColor),
                             lineWidth = LineWidth.TWO
                         ),
                         onSeriesCreated = { series -> mainSeriesApi = series }
@@ -142,8 +159,8 @@ fun PiaChartView(
                 "bars" -> {
                     api.addBarSeries(
                         options = BarSeriesOptions(
-                            upColor = IntColor(0xFF26A69A.toInt()),
-                            downColor = IntColor(0xFFEF5350.toInt())
+                            upColor = IntColor(upCandleColor),
+                            downColor = IntColor(downCandleColor)
                         ),
                         onSeriesCreated = { series -> mainSeriesApi = series }
                     )
@@ -151,11 +168,11 @@ fun PiaChartView(
                 else -> {
                     api.addCandlestickSeries(
                         options = CandlestickSeriesOptions(
-                            upColor = IntColor(0xFF26A69A.toInt()),
-                            downColor = IntColor(0xFFEF5350.toInt()),
+                            upColor = IntColor(upCandleColor),
+                            downColor = IntColor(downCandleColor),
                             borderVisible = false,
-                            wickUpColor = IntColor(0xFF26A69A.toInt()),
-                            wickDownColor = IntColor(0xFFEF5350.toInt())
+                            wickUpColor = IntColor(upCandleColor),
+                            wickDownColor = IntColor(downCandleColor)
                         ),
                         onSeriesCreated = { series -> mainSeriesApi = series }
                     )
@@ -185,7 +202,7 @@ fun PiaChartView(
     }
 
     // Set initial / historical main dataset, volume, and Support/Resistance lines
-    LaunchedEffect(historicalCandles, mainSeriesApi, volumeSeriesApi, chartType, showVolume, showSrLines) {
+    LaunchedEffect(historicalCandles, mainSeriesApi, volumeSeriesApi, chartType, isDarkMode, showVolume, showSrLines) {
         val api = mainSeriesApi
         val volApi = volumeSeriesApi
         if (historicalCandles.isNotEmpty()) {
@@ -239,7 +256,6 @@ fun PiaChartView(
                     val maxHigh = distinctList.maxOfOrNull { it.high }?.toFloat()
                     val minLow = distinctList.minOfOrNull { it.low }?.toFloat()
 
-                    // Clear old price lines if present
                     highPriceLine?.let { api.removePriceLine(it) }
                     lowPriceLine?.let { api.removePriceLine(it) }
 
@@ -247,7 +263,7 @@ fun PiaChartView(
                         highPriceLine = api.createPriceLine(
                             PriceLineOptions(
                                 price = maxHigh,
-                                color = IntColor(0xFFEF5350.toInt()),
+                                color = IntColor(downCandleColor),
                                 lineWidth = LineWidth.ONE,
                                 lineStyle = LineStyle.DOTTED,
                                 title = "HIGH"
@@ -259,7 +275,7 @@ fun PiaChartView(
                         lowPriceLine = api.createPriceLine(
                             PriceLineOptions(
                                 price = minLow,
-                                color = IntColor(0xFF26A69A.toInt()),
+                                color = IntColor(upCandleColor),
                                 lineWidth = LineWidth.ONE,
                                 lineStyle = LineStyle.DOTTED,
                                 title = "LOW"
@@ -274,7 +290,7 @@ fun PiaChartView(
                 if (showVolume) {
                     val volData = distinctList.map { c ->
                         val isUp = c.close >= c.open
-                        val colorInt = if (isUp) 0x6626A69A.toInt() else 0x66EF5350.toInt()
+                        val colorInt = if (isUp) (0x66000000 or upCandleColor) else (0x66000000 or downCandleColor)
                         HistogramData(
                             time = Time.Utc(c.time),
                             value = c.volume.toFloat(),
@@ -347,7 +363,7 @@ fun PiaChartView(
 
             if (showVolume && volApi != null) {
                 val isUp = latestCandle.close >= latestCandle.open
-                val colorInt = if (isUp) 0x6626A69A.toInt() else 0x66EF5350.toInt()
+                val colorInt = if (isUp) (0x66000000 or upCandleColor) else (0x66000000 or downCandleColor)
                 volApi.update(
                     HistogramData(
                         time = Time.Utc(latestCandle.time),
@@ -368,10 +384,26 @@ fun PiaChartView(
         }
     }
 
-    Box(modifier = modifier.fillMaxSize().background(PiaBg)) {
+    val canvasBg = if (isDarkMode) TvDarkBg else TvLightBg
+
+    Box(modifier = modifier.fillMaxSize().background(canvasBg)) {
         AndroidView(
             factory = { chartsView },
             modifier = Modifier.fillMaxSize()
         )
+
+        // Subtle in-chart legend for active EMA (TradingView style)
+        if (showEma && latestEma != null) {
+            Text(
+                text = "EMA 20  ${if (latestEma >= 1000) String.format("%,.1f", latestEma) else String.format("%.2f", latestEma)}",
+                color = TvAccent,
+                fontSize = 10.sp,
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(start = 12.dp, top = 6.dp)
+            )
+        }
     }
 }

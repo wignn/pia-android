@@ -68,6 +68,12 @@ class ChartViewModel(
     private val _showTape = MutableStateFlow(true)
     val showTape: StateFlow<Boolean> = _showTape.asStateFlow()
 
+    private val _showSrLines = MutableStateFlow(true)
+    val showSrLines: StateFlow<Boolean> = _showSrLines.asStateFlow()
+
+    private val _isDarkMode = MutableStateFlow(true)
+    val isDarkMode: StateFlow<Boolean> = _isDarkMode.asStateFlow()
+
     private val _recentTrades = MutableStateFlow<List<MarketTick>>(emptyList())
     val recentTrades: StateFlow<List<MarketTick>> = _recentTrades.asStateFlow()
 
@@ -93,6 +99,7 @@ class ChartViewModel(
             val savedRsi = prefs.showRsi.first()
             val savedVol = prefs.showVolume.first()
             val savedTape = prefs.showTape.first()
+            val savedDark = prefs.isDarkMode.first()
 
             _currentSymbol.value = savedSymbol
             _timeframe.value = savedTf
@@ -101,6 +108,7 @@ class ChartViewModel(
             _showRsi14.value = savedRsi
             _showVolume.value = savedVol
             _showTape.value = savedTape
+            _isDarkMode.value = savedDark
 
             loadSymbolData(savedSymbol, savedTf)
         }
@@ -226,6 +234,16 @@ class ChartViewModel(
         val next = !_showTape.value
         _showTape.value = next
         viewModelScope.launch { prefs.saveShowTape(next) }
+    }
+
+    fun toggleTheme() {
+        val next = !_isDarkMode.value
+        _isDarkMode.value = next
+        viewModelScope.launch { prefs.saveDarkMode(next) }
+    }
+
+    fun toggleSrLines() {
+        _showSrLines.value = !_showSrLines.value
     }
 
     fun setCrosshairTimestamp(timeSec: Long?) {
