@@ -103,9 +103,11 @@ fun PiaChartView(
             }
 
             // Dedicated volume price scale pinned to bottom 18%
-            api.priceScale(PriceScaleId("volume")).applyOptions {
-                scaleMargins = PriceScaleMargins(top = 0.82f, bottom = 0.0f)
-            }
+            api.priceScale(PriceScaleId("volume")).applyOptions(
+                PriceScaleOptions(
+                    scaleMargins = PriceScaleMargins(top = 0.82f, bottom = 0.0f)
+                )
+            )
 
             // Volume Histogram Series
             api.addHistogramSeries(
