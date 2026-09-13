@@ -54,7 +54,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build Android Release APK
-        run: ./gradlew assembleRelease --stacktrace
+        run: ./gradlew assembleRelease --stacktrace --info
 
       - name: Prepare APK Artifact
         run: |
@@ -80,5 +80,5 @@ jobs:
           else
             gh release create "$TAG_NAME" release-output/PIA-Terminal-release.apk \
               --title "PIA Terminal Android $TAG_NAME" \
-              --generate-notes
+              --notes "Official release binary for PIA Terminal Native Android $TAG_NAME."
           fi

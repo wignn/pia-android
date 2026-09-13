@@ -67,10 +67,10 @@ class ChartViewModel(
     private val _recentTrades = MutableStateFlow<List<MarketTick>>(emptyList())
     val recentTrades: StateFlow<List<MarketTick>> = _recentTrades.asStateFlow()
 
-    private val _alerts = MutableStateFlow<List<dev.wign.pia.ui.components.PriceAlert>>(emptyList())
-    val alerts: StateFlow<List<dev.wign.pia.ui.components.PriceAlert>> = _alerts.asStateFlow()
+    private val _alerts = MutableStateFlow<List<dev.wign.pia.data.PriceAlert>>(emptyList())
+    val alerts: StateFlow<List<dev.wign.pia.data.PriceAlert>> = _alerts.asStateFlow()
 
-    private val _triggeredAlert = kotlinx.coroutines.flow.MutableSharedFlow<dev.wign.pia.ui.components.PriceAlert>()
+    private val _triggeredAlert = kotlinx.coroutines.flow.MutableSharedFlow<dev.wign.pia.data.PriceAlert>()
     val triggeredAlert = _triggeredAlert.asSharedFlow()
 
     private val _crosshairCandle = MutableStateFlow<Candle?>(null)
@@ -210,7 +210,7 @@ class ChartViewModel(
     }
 
     fun addPriceAlert(targetPrice: Double, condition: String) {
-        val newAlert = dev.wign.pia.ui.components.PriceAlert(
+        val newAlert = dev.wign.pia.data.PriceAlert(
             symbol = _currentSymbol.value,
             targetPrice = targetPrice,
             condition = condition

@@ -39,6 +39,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import dev.wign.pia.data.PriceAlert
 import dev.wign.pia.ui.theme.PiaAccent
 import dev.wign.pia.ui.theme.PiaBorder
 import dev.wign.pia.ui.theme.PiaCard
@@ -46,14 +47,6 @@ import dev.wign.pia.ui.theme.PiaDown
 import dev.wign.pia.ui.theme.PiaText
 import dev.wign.pia.ui.theme.PiaTextMuted
 import dev.wign.pia.ui.theme.PiaUp
-
-data class PriceAlert(
-    val id: String = java.util.UUID.randomUUID().toString(),
-    val symbol: String,
-    val targetPrice: Double,
-    val condition: String, // "ABOVE", "BELOW"
-    var isTriggered: Boolean = false
-)
 
 @Composable
 fun PriceAlertDialog(

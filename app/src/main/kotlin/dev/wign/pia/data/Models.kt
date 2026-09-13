@@ -27,3 +27,12 @@ data class Candle(
     @Json(name = "close") val close: Double,
     @Json(name = "volume") val volume: Double
 )
+
+@JsonClass(generateAdapter = true)
+data class PriceAlert(
+    @Json(name = "id") val id: String = java.util.UUID.randomUUID().toString(),
+    @Json(name = "symbol") val symbol: String,
+    @Json(name = "target_price") val targetPrice: Double,
+    @Json(name = "condition") val condition: String,
+    @Json(name = "is_triggered") var isTriggered: Boolean = false
+)
