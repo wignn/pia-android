@@ -14,10 +14,13 @@ import com.tradingview.lightweightcharts.api.interfaces.SeriesApi
 import com.tradingview.lightweightcharts.api.options.models.CandlestickSeriesOptions
 import com.tradingview.lightweightcharts.api.options.models.Color
 import com.tradingview.lightweightcharts.api.options.models.LayoutOptions
+import com.tradingview.lightweightcharts.api.options.models.LineSeriesOptions
+import com.tradingview.lightweightcharts.api.options.models.LineWidth
 import com.tradingview.lightweightcharts.api.options.models.PriceScaleOptions
 import com.tradingview.lightweightcharts.api.options.models.TimeScaleOptions
 import com.tradingview.lightweightcharts.api.series.models.BarPrice
 import com.tradingview.lightweightcharts.api.series.models.CandlestickData
+import com.tradingview.lightweightcharts.api.series.models.LineData
 import com.tradingview.lightweightcharts.api.series.models.Time
 import com.tradingview.lightweightcharts.view.ChartsView
 import dev.wign.pia.data.Candle
@@ -27,10 +30,15 @@ import dev.wign.pia.ui.theme.PiaBg
 fun PiaChartView(
     historicalCandles: List<Candle>,
     latestCandle: Candle?,
+    emaSeries: List<Pair<Long, Double>>,
+    latestEma: Double?,
+    showEma: Boolean,
+    onCrosshairMoved: (Long?) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    var seriesApi: SeriesApi? = remember { null }
+    var candleSeriesApi: SeriesApi? = remember { null }
+    var emaSeriesApi: SeriesApi? = remember { null }
 
     val chartsView = remember {
         ChartsView(context).apply {
@@ -52,6 +60,8 @@ fun PiaChartView(
                     borderColor = Color(0xFF2A2E39.toInt())
                 )
             }
+
+            // Candlestick series
             api.addCandlestickSeries(
                 options = CandlestickSeriesOptions(
                     upColor = Color(0xFF26A69A.toInt()),
@@ -61,15 +71,37 @@ fun PiaChartView(
                     wickDownColor = Color(0xFFEF5350.toInt())
                 ),
                 onSeriesCreated = { series ->
-                    seriesApi = series
+                    candleSeriesApi = series
                 }
             )
+
+            // EMA 20 overlay line series
+            api.addLineSeries(
+                options = LineSeriesOptions(
+                    color = Color(0xFF2962FF.toInt()),
+                    lineWidth = LineWidth.TWO,
+                    priceLineVisible = false
+                ),
+                onSeriesCreated = { series ->
+                    emaSeriesApi = series
+                }
+            )
+
+            // Crosshair touch listener
+            api.subscribeCrosshairMove { params ->
+                val time = params.time
+                if (time is Time.Utc) {
+                    onCrosshairMoved(time.value)
+                } else {
+                    onCrosshairMoved(null)
+                }
+            }
         }
     }
 
-    // Set initial / historical data
+    // Set initial / historical candlestick data
     LaunchedEffect(historicalCandles) {
-        if (historicalCandles.isNotEmpty() && seriesApi != null) {
+        if (historicalCandles.isNotEmpty() && candleSeriesApi != null) {
             val list = historicalCandles.map { c ->
                 CandlestickData(
                     time = Time.Utc(c.time),
@@ -79,13 +111,30 @@ fun PiaChartView(
                     close = BarPrice(c.close.toFloat())
                 )
             }
-            seriesApi?.setData(list)
+            candleSeriesApi?.setData(list)
+        }
+    }
+
+    // Set / update EMA line series
+    LaunchedEffect(emaSeries, showEma) {
+        if (emaSeriesApi != null) {
+            if (showEma && emaSeries.isNotEmpty()) {
+                val lineDataList = emaSeries.map { (timeSec, valDouble) ->
+                    LineData(
+                        time = Time.Utc(timeSec),
+                        value = BarPrice(valDouble.toFloat())
+                    )
+                }
+                emaSeriesApi?.setData(lineDataList)
+            } else {
+                emaSeriesApi?.setData(emptyList())
+            }
         }
     }
 
     // Live tick / candle update
     LaunchedEffect(latestCandle) {
-        if (latestCandle != null && seriesApi != null) {
+        if (latestCandle != null && candleSeriesApi != null) {
             val candleData = CandlestickData(
                 time = Time.Utc(latestCandle.time),
                 open = BarPrice(latestCandle.open.toFloat()),
@@ -93,7 +142,16 @@ fun PiaChartView(
                 low = BarPrice(latestCandle.low.toFloat()),
                 close = BarPrice(latestCandle.close.toFloat())
             )
-            seriesApi?.update(candleData)
+            candleSeriesApi?.update(candleData)
+
+            if (showEma && latestEma != null && emaSeriesApi != null) {
+                emaSeriesApi?.update(
+                    LineData(
+                        time = Time.Utc(latestCandle.time),
+                        value = BarPrice(latestEma.toFloat())
+                    )
+                )
+            }
         }
     }
 

@@ -31,6 +31,11 @@ impl Ema {
     pub fn value(&self) -> Option<f64> {
         self.current
     }
+
+    pub fn calculate_series(prices: &[f64], period: usize) -> Vec<f64> {
+        let mut ema = Ema::new(period);
+        prices.iter().map(|&p| ema.update(p)).collect()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -103,6 +108,14 @@ mod tests {
         assert!((first - 100.0).abs() < 1e-6);
         let second = ema.update(110.0);
         assert!(second > 100.0 && second < 110.0);
+    }
+
+    #[test]
+    fn test_ema_series() {
+        let prices = vec![100.0, 102.0, 105.0, 103.0];
+        let series = Ema::calculate_series(&prices, 5);
+        assert_eq!(series.len(), 4);
+        assert!((series[0] - 100.0).abs() < 1e-6);
     }
 
     #[test]

@@ -23,6 +23,7 @@ object NativeBridge {
     external fun initConflator(timeframeSec: Long)
     private external fun processTick(symbol: String, price: Double, volume: Double, timestampMs: Long): String
     external fun calculateEma(period: Int, price: Double): Double
+    external fun calculateBatchEma(period: Int, prices: DoubleArray): DoubleArray
     external fun calculateRsi(period: Int, price: Double): Double
 
     fun conflateTick(symbol: String, price: Double, volume: Double, timestampMs: Long): Candle? {
@@ -35,5 +36,21 @@ object NativeBridge {
         } catch (e: Exception) {
             null
         }
+    }
+
+    fun computeEmaSeries(period: Int, prices: DoubleArray): DoubleArray {
+        if (!isLoaded || prices.isEmpty()) {
+            // Basic fallback in Kotlin
+            val multiplier = 2.0 / (period.coerceAtLeast(1) + 1.0)
+            val result = DoubleArray(prices.size)
+            var current = prices[0]
+            result[0] = current
+            for (i in 1 until prices.size) {
+                current = (prices[i] - current) * multiplier + current
+                result[i] = current
+            }
+            return result
+        }
+        return calculateBatchEma(period, prices)
     }
 }

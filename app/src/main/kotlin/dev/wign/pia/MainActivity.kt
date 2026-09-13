@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import dev.wign.pia.ui.chart.ChartViewModel
 import dev.wign.pia.ui.chart.PiaChartView
 import dev.wign.pia.ui.components.BottomNavBar
+import dev.wign.pia.ui.components.CrosshairHud
 import dev.wign.pia.ui.components.TopSymbolBar
 import dev.wign.pia.ui.components.WatchlistSheet
 import dev.wign.pia.ui.theme.PiaBg
@@ -52,13 +53,17 @@ fun MainScreen(viewModel: ChartViewModel) {
 
     val showEma by viewModel.showEma20.collectAsState()
     val emaValue by viewModel.ema20.collectAsState()
+    val emaSeries by viewModel.emaSeries.collectAsState()
     val showRsi by viewModel.showRsi14.collectAsState()
     val rsiValue by viewModel.rsi14.collectAsState()
+    val crosshairCandle by viewModel.crosshairCandle.collectAsState()
 
     var activeTab by remember { mutableStateOf("chart") }
     var isWatchlistOpen by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
+
+    val displayHudCandle = crosshairCandle ?: latestCandle ?: historicalCandles.lastOrNull()
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -93,9 +98,19 @@ fun MainScreen(viewModel: ChartViewModel) {
                 onToggleRsi = { viewModel.toggleRsi() }
             )
 
+            // Crosshair / Current OHLCV HUD
+            CrosshairHud(candle = displayHudCandle)
+
+            // Interactive Chart View
             PiaChartView(
                 historicalCandles = historicalCandles,
                 latestCandle = latestCandle,
+                emaSeries = emaSeries,
+                latestEma = emaValue,
+                showEma = showEma,
+                onCrosshairMoved = { timeSec ->
+                    viewModel.setCrosshairTimestamp(timeSec)
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)

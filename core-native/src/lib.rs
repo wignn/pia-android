@@ -4,8 +4,8 @@ pub mod ringbuffer;
 
 use conflator::{MarketConflator, RawTick};
 use indicators::{Ema, Rsi};
-use jni::objects::{JClass, JString};
-use jni::sys::{jdouble, jint, jlong, jstring};
+use jni::objects::{JClass, JDoubleArray, JString};
+use jni::sys::{jdouble, jdoubleArray, jint, jlong, jstring};
 use jni::JNIEnv;
 use parking_lot::Mutex;
 use std::collections::HashMap;
@@ -82,6 +82,38 @@ pub extern "system" fn Java_dev_wign_pia_data_NativeBridge_calculateEma(
         .entry(period as usize)
         .or_insert_with(|| Ema::new(period as usize));
     ema.update(price)
+}
+
+#[no_mangle]
+pub extern "system" fn Java_dev_wign_pia_data_NativeBridge_calculateBatchEma(
+    env: JNIEnv,
+    _class: JClass,
+    period: jint,
+    prices: JDoubleArray,
+) -> jdoubleArray {
+    let len = match env.get_array_length(&prices) {
+        Ok(l) => l as usize,
+        Err(_) => return std::ptr::null_mut(),
+    };
+
+    let mut buf = vec![0.0f64; len];
+    if env.get_double_array_region(&prices, 0, &mut buf).is_err() {
+        return std::ptr::null_mut();
+    }
+
+    let calculated = Ema::calculate_series(&buf, period as usize);
+    match env.new_double_array(calculated.len() as i32) {
+        Ok(out_arr) => {
+            if env
+                .set_double_array_region(&out_arr, 0, &calculated)
+                .is_err()
+            {
+                return std::ptr::null_mut();
+            }
+            out_arr.into_raw()
+        }
+        Err(_) => std::ptr::null_mut(),
+    }
 }
 
 #[no_mangle]

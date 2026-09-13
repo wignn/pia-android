@@ -34,14 +34,20 @@ class ChartViewModel(
     private val _ema20 = MutableStateFlow<Double?>(null)
     val ema20: StateFlow<Double?> = _ema20.asStateFlow()
 
+    private val _emaSeries = MutableStateFlow<List<Pair<Long, Double>>>(emptyList())
+    val emaSeries: StateFlow<List<Pair<Long, Double>>> = _emaSeries.asStateFlow()
+
     private val _rsi14 = MutableStateFlow<Double?>(null)
     val rsi14: StateFlow<Double?> = _rsi14.asStateFlow()
 
-    private val _showEma20 = MutableStateFlow(false)
+    private val _showEma20 = MutableStateFlow(true)
     val showEma20: StateFlow<Boolean> = _showEma20.asStateFlow()
 
     private val _showRsi14 = MutableStateFlow(false)
     val showRsi14: StateFlow<Boolean> = _showRsi14.asStateFlow()
+
+    private val _crosshairCandle = MutableStateFlow<Candle?>(null)
+    val crosshairCandle: StateFlow<Candle?> = _crosshairCandle.asStateFlow()
 
     init {
         NativeBridge.initConflator(60)
@@ -53,7 +59,7 @@ class ChartViewModel(
                 if (tick.symbol == _currentSymbol.value) {
                     _lastPrice.value = tick.price
 
-                    // Rust NDK calculations
+                    // Native NDK calculation for real-time EMA & RSI
                     val ema = NativeBridge.calculateEma(20, tick.price)
                     _ema20.value = ema
 
@@ -105,6 +111,16 @@ class ChartViewModel(
         _showRsi14.value = !_showRsi14.value
     }
 
+    fun setCrosshairTimestamp(timeSec: Long?) {
+        if (timeSec == null) {
+            _crosshairCandle.value = null
+            return
+        }
+        val list = _historicalCandles.value
+        val match = list.find { it.time == timeSec } ?: list.lastOrNull()
+        _crosshairCandle.value = match
+    }
+
     private fun loadSymbolData(symbol: String, timeframe: String) {
         wsClient.subscribe(listOf("ticks:$symbol"))
 
@@ -113,6 +129,12 @@ class ChartViewModel(
             if (candles.isNotEmpty()) {
                 _historicalCandles.value = candles
                 _lastPrice.value = candles.last().close
+
+                // Compute initial batch EMA curve via NDK
+                val closes = candles.map { it.close }.toDoubleArray()
+                val emaValues = NativeBridge.computeEmaSeries(20, closes)
+                _emaSeries.value = candles.mapIndexed { i, c -> Pair(c.time, emaValues[i]) }
+                _ema20.value = emaValues.lastOrNull()
             }
         }
     }
