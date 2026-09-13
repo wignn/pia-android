@@ -302,6 +302,17 @@ fun PiaChartView(
                     volApi.setData(emptyList())
                 }
             }
+
+            // Auto fit and center the newly loaded symbol data
+            chartsView.api.timeScale.fitContent()
+        } else {
+            // Immediately clear previous symbol's series and S/R lines
+            mainSeriesApi?.setData(emptyList())
+            volApi?.setData(emptyList())
+            highPriceLine?.let { mainSeriesApi?.removePriceLine(it) }
+            lowPriceLine?.let { mainSeriesApi?.removePriceLine(it) }
+            highPriceLine = null
+            lowPriceLine = null
         }
     }
 

@@ -64,9 +64,10 @@ class PiaApiClient(
         limit: Int = 120
     ): List<Candle> = withContext(Dispatchers.IO) {
         val cleanSymbol = if (symbol.contains(":")) symbol.substringAfter(":") else symbol
-        val url = "$baseUrl/api/v1/market/history/$cleanSymbol?resolution=$resolution&limit=$limit"
+        val url = "$baseUrl/api/v1/market/history/$cleanSymbol?resolution=$resolution&limit=$limit&api_key=$apiKey"
         val request = Request.Builder()
             .url(url)
+            .addHeader("Authorization", "Bearer $apiKey")
             .addHeader("x-api-key", apiKey)
             .get()
             .build()
@@ -98,9 +99,10 @@ class PiaApiClient(
     }
 
     suspend fun getSocialPosts(limit: Int = 30): List<SocialPostItem> = withContext(Dispatchers.IO) {
-        val url = "$baseUrl/api/v1/social/posts?limit=$limit"
+        val url = "$baseUrl/api/v1/social/posts?limit=$limit&api_key=$apiKey"
         val request = Request.Builder()
             .url(url)
+            .addHeader("Authorization", "Bearer $apiKey")
             .addHeader("x-api-key", apiKey)
             .get()
             .build()

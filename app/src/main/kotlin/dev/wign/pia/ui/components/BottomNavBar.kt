@@ -26,10 +26,13 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import dev.wign.pia.ui.theme.PiaAccent
-import dev.wign.pia.ui.theme.PiaBorder
-import dev.wign.pia.ui.theme.PiaCard
-import dev.wign.pia.ui.theme.PiaTextMuted
+import dev.wign.pia.ui.theme.TvAccent
+import dev.wign.pia.ui.theme.TvDarkBorder
+import dev.wign.pia.ui.theme.TvDarkCard
+import dev.wign.pia.ui.theme.TvDarkTextMuted
+import dev.wign.pia.ui.theme.TvLightBorder
+import dev.wign.pia.ui.theme.TvLightCard
+import dev.wign.pia.ui.theme.TvLightTextMuted
 
 data class NavTab(
     val id: String,
@@ -40,6 +43,7 @@ data class NavTab(
 @Composable
 fun BottomNavBar(
     activeTab: String,
+    isDarkMode: Boolean = true,
     onTabSelected: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -47,24 +51,28 @@ fun BottomNavBar(
         NavTab("watchlist", "Watchlist", Icons.Default.ViewList),
         NavTab("chart", "Chart", Icons.Default.ShowChart),
         NavTab("markets", "Markets", Icons.Default.Analytics),
-        NavTab("social", "Social & News", Icons.Default.Feed),
+        NavTab("social", "News", Icons.Default.Feed),
         NavTab("settings", "Settings", Icons.Default.Settings)
     )
+
+    val cardColor = if (isDarkMode) TvDarkCard else TvLightCard
+    val borderColor = if (isDarkMode) TvDarkBorder else TvLightBorder
+    val mutedColor = if (isDarkMode) TvDarkTextMuted else TvLightTextMuted
 
     Column(modifier = modifier.fillMaxWidth()) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(0.5.dp)
-                .background(PiaBorder)
+                .background(borderColor)
         )
 
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(PiaCard)
+                .background(cardColor)
                 .navigationBarsPadding()
-                .height(52.dp)
+                .height(48.dp)
                 .padding(horizontal = 4.dp),
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically
@@ -73,25 +81,22 @@ fun BottomNavBar(
                 val isSelected = tab.id == activeTab
                 Column(
                     modifier = Modifier
-                        .weight(1f)
                         .clickable { onTabSelected(tab.id) }
-                        .padding(vertical = 4.dp),
+                        .padding(horizontal = 12.dp, vertical = 4.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
                     Icon(
                         imageVector = tab.icon,
                         contentDescription = tab.label,
-                        tint = if (isSelected) PiaAccent else PiaTextMuted,
-                        modifier = Modifier.size(20.dp)
+                        tint = if (isSelected) TvAccent else mutedColor,
+                        modifier = Modifier.size(18.dp)
                     )
                     Text(
                         text = tab.label,
-                        color = if (isSelected) PiaAccent else PiaTextMuted,
-                        fontSize = 10.sp,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                        maxLines = 1,
-                        letterSpacing = (-0.2).sp
+                        color = if (isSelected) TvAccent else mutedColor,
+                        fontSize = 9.sp,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                     )
                 }
             }

@@ -172,6 +172,11 @@ class ChartViewModel(
         if (_currentSymbol.value == symbol) return
         _currentSymbol.value = symbol
         _recentTrades.value = emptyList()
+        _latestCandle.value = null
+        _historicalCandles.value = emptyList()
+        _emaSeries.value = emptyList()
+        _ema20.value = null
+        _crosshairCandle.value = null
         viewModelScope.launch { prefs.saveSymbol(symbol) }
         loadSymbolData(symbol, _timeframe.value)
     }

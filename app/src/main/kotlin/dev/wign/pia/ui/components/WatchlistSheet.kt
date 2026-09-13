@@ -1,8 +1,8 @@
 package dev.wign.pia.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -38,13 +39,17 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import dev.wign.pia.ui.theme.PiaAccent
-import dev.wign.pia.ui.theme.PiaBorder
-import dev.wign.pia.ui.theme.PiaCard
-import dev.wign.pia.ui.theme.PiaDown
-import dev.wign.pia.ui.theme.PiaText
-import dev.wign.pia.ui.theme.PiaTextMuted
-import dev.wign.pia.ui.theme.PiaUp
+import dev.wign.pia.ui.theme.TvAccent
+import dev.wign.pia.ui.theme.TvDarkBorder
+import dev.wign.pia.ui.theme.TvDarkCard
+import dev.wign.pia.ui.theme.TvDarkText
+import dev.wign.pia.ui.theme.TvDarkTextMuted
+import dev.wign.pia.ui.theme.TvDown
+import dev.wign.pia.ui.theme.TvLightBorder
+import dev.wign.pia.ui.theme.TvLightCard
+import dev.wign.pia.ui.theme.TvLightText
+import dev.wign.pia.ui.theme.TvLightTextMuted
+import dev.wign.pia.ui.theme.TvUp
 
 data class WatchlistItem(
     val symbol: String,
@@ -74,41 +79,39 @@ val INSTITUTIONAL_WATCHLIST = listOf(
     WatchlistItem("IDX:GOTO", "GoTo Gojek Tokopedia", "IDX", 58.0, 1.75),
     WatchlistItem("IDX:COMPOSITE", "IHSG Composite Index", "IDX", 7760.5, 0.35),
 
-    // === CRYPTO MAJORS ===
-    WatchlistItem("BINANCE:BTCUSDT", "Bitcoin / Tether", "Crypto", 94250.0, 2.45),
-    WatchlistItem("BINANCE:ETHUSDT", "Ethereum / Tether", "Crypto", 3350.0, -0.85),
-    WatchlistItem("BINANCE:SOLUSDT", "Solana / Tether", "Crypto", 215.4, 4.12),
-    WatchlistItem("BINANCE:BNBUSDT", "BNB / Tether", "Crypto", 680.2, 1.10),
-    WatchlistItem("BINANCE:XRPUSDT", "Ripple / Tether", "Crypto", 1.45, 8.20),
-    WatchlistItem("BINANCE:DOGEUSDT", "Dogecoin / Tether", "Crypto", 0.38, 5.15),
-    WatchlistItem("BINANCE:ADAUSDT", "Cardano / Tether", "Crypto", 0.88, 1.95),
-    WatchlistItem("BINANCE:AVAXUSDT", "Avalanche / Tether", "Crypto", 34.5, -0.29),
-    WatchlistItem("BINANCE:SUIUSDT", "Sui Network / Tether", "Crypto", 3.42, 6.75),
-    WatchlistItem("BINANCE:NEARUSDT", "Near Protocol / Tether", "Crypto", 6.80, 2.80),
+    // === CRYPTO ===
+    WatchlistItem("BINANCE:BTCUSDT", "Bitcoin / Tether", "Crypto", 76800.0, 2.45),
+    WatchlistItem("BINANCE:ETHUSDT", "Ethereum / Tether", "Crypto", 2480.0, 1.82),
+    WatchlistItem("BINANCE:SOLUSDT", "Solana / Tether", "Crypto", 148.5, 4.12),
+    WatchlistItem("BINANCE:BNBUSDT", "BNB / Tether", "Crypto", 580.2, 0.88),
+    WatchlistItem("BINANCE:XRPUSDT", "Ripple / Tether", "Crypto", 0.584, -0.75),
+    WatchlistItem("BINANCE:DOGEUSDT", "Dogecoin / Tether", "Crypto", 0.128, 3.20),
+    WatchlistItem("BINANCE:ADAUSDT", "Cardano / Tether", "Crypto", 0.385, 0.26),
+    WatchlistItem("BINANCE:AVAXUSDT", "Avalanche / Tether", "Crypto", 28.4, 2.15),
+    WatchlistItem("BINANCE:LINKUSDT", "Chainlink / Tether", "Crypto", 11.9, 1.45),
+    WatchlistItem("BINANCE:SUIUSDT", "Sui Network / Tether", "Crypto", 1.85, 8.40),
 
-    // === US EQUITIES ===
-    WatchlistItem("US:NVDA", "Nvidia Corporation", "US Stocks", 145.2, 3.20),
-    WatchlistItem("US:AAPL", "Apple Inc", "US Stocks", 232.5, 0.45),
-    WatchlistItem("US:MSFT", "Microsoft Corporation", "US Stocks", 425.0, -0.22),
-    WatchlistItem("US:AMZN", "Amazon.com Inc", "US Stocks", 205.8, 1.15),
-    WatchlistItem("US:GOOGL", "Alphabet Inc (Google)", "US Stocks", 178.4, 0.65),
-    WatchlistItem("US:META", "Meta Platforms Inc", "US Stocks", 590.2, 1.85),
-    WatchlistItem("US:TSLA", "Tesla Inc", "US Stocks", 248.5, -1.90),
+    // === US STOCKS ===
+    WatchlistItem("US:NVDA", "NVIDIA Corporation", "US Stocks", 125.4, 3.15),
+    WatchlistItem("US:AAPL", "Apple Inc.", "US Stocks", 228.2, 0.65),
+    WatchlistItem("US:MSFT", "Microsoft Corporation", "US Stocks", 425.8, -0.42),
+    WatchlistItem("US:TSLA", "Tesla Inc.", "US Stocks", 235.6, 4.80),
+    WatchlistItem("US:GOOGL", "Alphabet Inc.", "US Stocks", 162.3, 0.28),
+    WatchlistItem("US:AMZN", "Amazon.com Inc.", "US Stocks", 188.9, 1.12),
+    WatchlistItem("US:META", "Meta Platforms Inc.", "US Stocks", 512.4, 1.74),
+    WatchlistItem("US:AMD", "Advanced Micro Devices", "US Stocks", 152.8, 2.60),
 
-    // === COMMODITIES & FOREX ===
-    WatchlistItem("CAPITALCOM:GOLD", "Gold Spot (XAU/USD)", "Commodities", 2685.2, 0.42),
-    WatchlistItem("CAPITALCOM:SILVER", "Silver Spot (XAG/USD)", "Commodities", 31.85, -0.65),
-    WatchlistItem("CAPITALCOM:OIL_CRUDE", "WTI Crude Oil", "Commodities", 69.40, -1.15),
-    WatchlistItem("CAPITALCOM:BRENT", "Brent Crude Oil", "Commodities", 73.15, -0.95),
-    WatchlistItem("FX:EURUSD", "Euro / US Dollar", "Forex", 1.0542, -0.18),
-    WatchlistItem("FX:GBPUSD", "British Pound / USD", "Forex", 1.2615, 0.12),
-    WatchlistItem("FX:USDJPY", "US Dollar / Japanese Yen", "Forex", 154.20, 0.35),
+    // === COMMODITIES ===
+    WatchlistItem("COMM:XAUUSD", "Gold Spot / US Dollar", "Commodities", 2584.2, 0.85),
+    WatchlistItem("COMM:XAGUSD", "Silver Spot / US Dollar", "Commodities", 30.75, 1.42),
+    WatchlistItem("COMM:WTI", "Crude Oil WTI", "Commodities", 69.80, -1.25),
+    WatchlistItem("COMM:BRENT", "Brent Crude Oil", "Commodities", 73.20, -1.10),
 
-    // === GLOBAL INDICES ===
-    WatchlistItem("US:SPX", "S&P 500 Index", "Indices", 5870.5, 0.55),
-    WatchlistItem("US:NDX", "Nasdaq 100 Index", "Indices", 20450.0, 0.82),
-    WatchlistItem("US:DJI", "Dow Jones Industrial", "Indices", 43250.0, 0.28),
-    WatchlistItem("HK:HSI", "Hang Seng Index", "Indices", 19680.0, -0.45)
+    // === FOREX ===
+    WatchlistItem("FX:EURUSD", "Euro / US Dollar", "Forex", 1.1085, 0.12),
+    WatchlistItem("FX:USDJPY", "US Dollar / Japanese Yen", "Forex", 142.30, -0.45),
+    WatchlistItem("FX:GBPUSD", "British Pound / US Dollar", "Forex", 1.3140, 0.28),
+    WatchlistItem("FX:USDIDR", "US Dollar / Indonesian Rupiah", "Forex", 15420.0, -0.15)
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -116,98 +119,100 @@ val INSTITUTIONAL_WATCHLIST = listOf(
 fun WatchlistSheet(
     sheetState: SheetState,
     currentSymbol: String,
+    isDarkMode: Boolean = true,
     onSymbolSelected: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("All") }
 
-    val categories = listOf("All", "IDX", "Crypto", "US Stocks", "Commodities", "Forex", "Indices")
+    val categories = listOf("All", "IDX", "Crypto", "US Stocks", "Commodities", "Forex")
 
     val filteredList = remember(searchQuery, selectedCategory) {
         INSTITUTIONAL_WATCHLIST.filter { item ->
-            val matchesCategory = selectedCategory == "All" || item.category == selectedCategory
-            val matchesQuery = item.symbol.contains(searchQuery, ignoreCase = true) ||
+            val matchesCat = selectedCategory == "All" || item.category == selectedCategory
+            val matchesQuery = searchQuery.isEmpty() ||
+                    item.symbol.contains(searchQuery, ignoreCase = true) ||
                     item.name.contains(searchQuery, ignoreCase = true)
-            matchesCategory && matchesQuery
+            matchesCat && matchesQuery
         }
     }
+
+    val cardColor = if (isDarkMode) TvDarkCard else TvLightCard
+    val textColor = if (isDarkMode) TvDarkText else TvLightText
+    val mutedColor = if (isDarkMode) TvDarkTextMuted else TvLightTextMuted
+    val borderColor = if (isDarkMode) TvDarkBorder else TvLightBorder
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = PiaCard,
-        contentColor = PiaText
+        containerColor = cardColor,
+        contentColor = textColor
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 14.dp, vertical = 6.dp)
         ) {
+            // Header Bar
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Markets Watchlist",
-                    fontSize = 18.sp,
+                    text = "Symbol Search & Watchlist",
+                    fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = PiaText
+                    color = textColor
                 )
                 IconButton(onClick = onDismiss, modifier = Modifier.size(28.dp)) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Close",
-                        tint = PiaTextMuted
-                    )
+                    Icon(imageVector = Icons.Default.Close, contentDescription = "Close", tint = mutedColor)
                 }
             }
 
-            // Search Bar
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // Search input
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                placeholder = { Text("Search 45+ assets (BBCA, BTC, GOLD)...", color = PiaTextMuted, fontSize = 13.sp) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                placeholder = { Text("Search BBCA, BTC, NVDA, GOLD...", color = mutedColor, fontSize = 12.sp) },
                 leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "Search",
-                        tint = PiaTextMuted,
-                        modifier = Modifier.size(18.dp)
-                    )
+                    Icon(imageVector = Icons.Default.Search, contentDescription = null, tint = mutedColor, modifier = Modifier.size(16.dp))
                 },
                 singleLine = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = PiaAccent,
-                    unfocusedBorderColor = PiaBorder,
-                    focusedTextColor = PiaText,
-                    unfocusedTextColor = PiaText
-                )
+                    focusedBorderColor = TvAccent,
+                    unfocusedBorderColor = borderColor,
+                    focusedTextColor = textColor,
+                    unfocusedTextColor = textColor
+                ),
+                shape = RoundedCornerShape(8.dp)
             )
 
-            // Category Filter Pills
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Category Selector Chips
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 10.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 categories.forEach { cat ->
                     val isSelected = cat == selectedCategory
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(if (isSelected) PiaAccent else PiaBorder.copy(alpha = 0.5f))
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(if (isSelected) TvAccent else borderColor.copy(alpha = 0.4f))
                             .clickable { selectedCategory = cat }
-                            .padding(horizontal = 10.dp, vertical = 5.dp)
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
                         Text(
                             text = cat,
-                            color = if (isSelected) PiaText else PiaTextMuted,
+                            color = if (isSelected) androidx.compose.ui.graphics.Color.White else mutedColor,
                             fontSize = 11.sp,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                         )
@@ -215,17 +220,17 @@ fun WatchlistSheet(
                 }
             }
 
-            // High Density Quote Rows
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Institutional Asset Rows (44dp compact TradingView table rows)
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(440.dp),
+                modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 items(filteredList) { item ->
-                    val isCurrent = item.symbol == currentSymbol
+                    val isCurrent = item.symbol.equals(currentSymbol, ignoreCase = true)
                     val isPositive = item.sampleChange >= 0.0
-                    val badgeColor = if (isPositive) PiaUp else PiaDown
+                    val badgeColor = if (isPositive) TvUp else TvDown
 
                     val parts = item.symbol.split(":")
                     val ticker = if (parts.size > 1) parts[1] else item.symbol
@@ -234,13 +239,14 @@ fun WatchlistSheet(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .height(44.dp)
                             .clip(RoundedCornerShape(6.dp))
-                            .background(if (isCurrent) PiaBorder.copy(alpha = 0.6f) else PiaCard)
+                            .background(if (isCurrent) TvAccent.copy(alpha = 0.12f) else androidx.compose.ui.graphics.Color.Transparent)
                             .clickable {
                                 onSymbolSelected(item.symbol)
                                 onDismiss()
                             }
-                            .padding(horizontal = 10.dp, vertical = 8.dp),
+                            .padding(horizontal = 8.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -248,15 +254,15 @@ fun WatchlistSheet(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
                                     text = ticker,
-                                    color = if (isCurrent) PiaAccent else PiaText,
-                                    fontSize = 14.sp,
+                                    color = if (isCurrent) TvAccent else textColor,
+                                    fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                                 if (exchange.isNotEmpty()) {
                                     Spacer(modifier = Modifier.size(4.dp))
                                     Text(
                                         text = exchange,
-                                        color = PiaTextMuted,
+                                        color = mutedColor,
                                         fontSize = 9.sp,
                                         fontWeight = FontWeight.SemiBold
                                     )
@@ -264,20 +270,20 @@ fun WatchlistSheet(
                             }
                             Text(
                                 text = item.name,
-                                color = PiaTextMuted,
-                                fontSize = 11.sp
+                                color = mutedColor,
+                                fontSize = 10.sp
                             )
                         }
 
                         // Right: Price and Change Pill
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             Text(
                                 text = if (item.samplePrice >= 1000) String.format("%,.0f", item.samplePrice) else String.format("%.2f", item.samplePrice),
-                                color = PiaText,
-                                fontSize = 13.sp,
+                                color = textColor,
+                                fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 fontFamily = FontFamily.Monospace
                             )
@@ -286,8 +292,7 @@ fun WatchlistSheet(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(4.dp))
                                     .background(badgeColor.copy(alpha = 0.15f))
-                                    .border(0.5.dp, badgeColor.copy(alpha = 0.4f), RoundedCornerShape(4.dp))
-                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                                    .padding(horizontal = 5.dp, vertical = 2.dp)
                             ) {
                                 val sign = if (isPositive) "+" else ""
                                 Text(

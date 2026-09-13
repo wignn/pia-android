@@ -144,6 +144,7 @@ fun MainScreen(
             if (!isLandscape) {
                 BottomNavBar(
                     activeTab = activeTab,
+                    isDarkMode = isDarkMode,
                     onTabSelected = { tab ->
                         activeTab = tab
                     }
@@ -266,7 +267,10 @@ fun MainScreen(
                         )
 
                         // Compact OHLCV crosshair HUD
-                        CrosshairHud(candle = displayHudCandle)
+                        CrosshairHud(
+                            candle = displayHudCandle,
+                            isDarkMode = isDarkMode
+                        )
 
                         // Full-bleed Lightweight Charts View with Volume & S/R Lines
                         PiaChartView(
@@ -289,7 +293,10 @@ fun MainScreen(
 
                         // Real-time trades tape drawer
                         if (showTape && recentTrades.isNotEmpty()) {
-                            RecentTradesTape(trades = recentTrades)
+                            RecentTradesTape(
+                                trades = recentTrades,
+                                isDarkMode = isDarkMode
+                            )
                         }
                     }
                 }
@@ -297,6 +304,7 @@ fun MainScreen(
                 activeTab == "watchlist" -> {
                     WatchlistScreen(
                         currentSymbol = symbol,
+                        isDarkMode = isDarkMode,
                         onSymbolSelected = { selected ->
                             viewModel.selectSymbol(selected)
                             activeTab = "chart"
@@ -313,6 +321,7 @@ fun MainScreen(
                 WatchlistSheet(
                     sheetState = sheetState,
                     currentSymbol = symbol,
+                    isDarkMode = isDarkMode,
                     onSymbolSelected = { selected ->
                         viewModel.selectSymbol(selected)
                     },
